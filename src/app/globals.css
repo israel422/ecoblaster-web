@@ -1,0 +1,385 @@
+* {
+  margin: 0;
+  padding: 0;
+  box-sizing: border-box;
+}
+
+html,
+body {
+  max-width: 100vw;
+  overflow-x: hidden;
+}
+
+body {
+  font-family: "Segoe UI", Arial, Helvetica, sans-serif;
+  background: #f0f4f8;
+  min-height: 100vh;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  color: #202124;
+}
+
+button {
+  font-family: inherit;
+}
+
+/* ── Wizard shell ─────────────────────────────────────────── */
+.tela {
+  display: flex;
+  flex-direction: column;
+  min-height: 100vh;
+  padding: 72px 24px 40px;
+  width: 100%;
+  max-width: 600px;
+  justify-content: center;
+  position: relative;
+}
+
+.progresso {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  padding: 20px 24px 0;
+}
+
+.prog-barra {
+  flex: 1;
+  height: 4px;
+  border-radius: 2px;
+  background: #e0e0e0;
+}
+
+.prog-barra.feita,
+.prog-barra.atual {
+  background: #1a73e8;
+}
+
+.prog-label {
+  font-size: 11px;
+  color: #888;
+  white-space: nowrap;
+}
+
+.passo-titulo {
+  font-size: 28px;
+  font-weight: 800;
+  color: #1b4fa2;
+  margin-bottom: 8px;
+}
+
+.passo-sub {
+  font-size: 16px;
+  color: #888;
+  margin-bottom: 28px;
+}
+
+.campo-grande {
+  width: 100%;
+  padding: 20px;
+  border: 2px solid #e0e0e0;
+  border-radius: 14px;
+  font-size: 18px;
+  font-family: inherit;
+  color: #202124;
+  background: #fff;
+  outline: none;
+  appearance: none;
+  transition: border-color 0.15s;
+}
+
+.campo-grande:focus {
+  border-color: #1a73e8;
+  box-shadow: 0 0 0 3px rgba(26, 115, 232, 0.12);
+}
+
+textarea.campo-grande {
+  resize: none;
+  height: 130px;
+  line-height: 1.5;
+}
+
+.erro-inline {
+  color: #c5221f;
+  font-size: 15px;
+  margin-top: 8px;
+  font-weight: 600;
+}
+
+.rodape {
+  margin-top: 28px;
+  display: flex;
+  gap: 12px;
+}
+
+.btn-avancar {
+  flex: 1;
+  padding: 20px;
+  background: linear-gradient(135deg, #1557b0, #1a73e8);
+  color: #fff;
+  border: none;
+  border-radius: 14px;
+  font-size: 18px;
+  font-weight: 700;
+  cursor: pointer;
+}
+
+.btn-avancar:disabled {
+  background: #9e9e9e;
+  cursor: not-allowed;
+}
+
+.btn-voltar {
+  padding: 20px 24px;
+  background: #fff;
+  color: #5f6368;
+  border: 2px solid #e0e0e0;
+  border-radius: 14px;
+  font-size: 17px;
+  font-weight: 600;
+  cursor: pointer;
+}
+
+.btn-enviar {
+  flex: 1;
+  padding: 20px;
+  background: linear-gradient(135deg, #137333, #1e8e3e);
+  color: #fff;
+  border: none;
+  border-radius: 14px;
+  font-size: 18px;
+  font-weight: 700;
+  cursor: pointer;
+}
+
+.btn-enviar:disabled {
+  background: #9e9e9e;
+  cursor: not-allowed;
+}
+
+/* ── Obra: campo com busca ────────────────────────────────── */
+.select-wrap {
+  position: relative;
+}
+
+.obra-lista {
+  display: none;
+  position: absolute;
+  top: calc(100% - 2px);
+  left: 0;
+  right: 0;
+  background: #fff;
+  border: 2px solid #1a73e8;
+  border-top: none;
+  border-radius: 0 0 14px 14px;
+  max-height: 260px;
+  overflow-y: auto;
+  z-index: 50;
+  box-shadow: 0 4px 16px rgba(0, 0, 0, 0.1);
+}
+
+.obra-lista.aberta {
+  display: block;
+}
+
+.obra-opcao {
+  padding: 16px 18px;
+  cursor: pointer;
+  font-size: 17px;
+  border-bottom: 1px solid #f0f4f8;
+  color: #202124;
+}
+
+.obra-opcao:hover {
+  background: #eef4fd;
+  color: #1a73e8;
+}
+
+/* ── Operador (passo 3) ───────────────────────────────────── */
+.operador-card {
+  background: #eef4fd;
+  border: 2px solid #1a73e8;
+  border-radius: 12px;
+  padding: 20px;
+  text-align: center;
+}
+
+.operador-nome {
+  font-size: 22px;
+  font-weight: 800;
+  color: #1b4fa2;
+  margin-bottom: 4px;
+}
+
+.operador-label {
+  font-size: 14px;
+  color: #666;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+}
+
+/* ── Tipo de cava (passo 4) ───────────────────────────────── */
+.tipo-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 12px;
+}
+
+.tipo-btn {
+  padding: 26px 10px;
+  border: 2px solid #e0e0e0;
+  border-radius: 14px;
+  background: #fff;
+  font-size: 16px;
+  font-weight: 700;
+  color: #5f6368;
+  cursor: pointer;
+  text-align: center;
+  transition: all 0.15s;
+  line-height: 1.5;
+}
+
+.tipo-btn.ativo {
+  border-color: #1a73e8;
+  background: #eef4fd;
+  color: #1a73e8;
+}
+
+/* ── Splash / login ───────────────────────────────────────── */
+.splash {
+  position: fixed;
+  inset: 0;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  z-index: 100;
+  padding: 24px;
+  text-align: center;
+  background: linear-gradient(135deg, #1b4fa2, #0d2c63);
+  background-size: cover;
+  background-position: center;
+}
+
+.splash-card {
+  position: relative;
+  z-index: 1;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  width: 100%;
+  max-width: 380px;
+  background: rgba(255, 255, 255, 0.95);
+  border-radius: 24px;
+  padding: 36px 28px;
+  box-shadow: 0 8px 40px rgba(0, 0, 0, 0.18);
+}
+
+.splash-titulo {
+  font-size: 30px;
+  font-weight: 800;
+  color: #1b4fa2;
+  letter-spacing: 2px;
+  margin-bottom: 4px;
+}
+
+.splash-sub {
+  font-size: 13px;
+  color: #666;
+  margin-bottom: 32px;
+}
+
+.splash-label {
+  display: block;
+  font-size: 12px;
+  font-weight: 700;
+  color: #5f6368;
+  text-transform: uppercase;
+  letter-spacing: 0.6px;
+  margin-bottom: 8px;
+}
+
+.splash-input {
+  width: 100%;
+  padding: 18px 20px;
+  border: 1.5px solid #e0e0e0;
+  border-radius: 12px;
+  font-size: 18px;
+  font-family: inherit;
+  outline: none;
+  text-align: center;
+  letter-spacing: 2px;
+  color: #202124;
+}
+
+.splash-erro {
+  background: #fef2f2;
+  border: 1.5px solid #ea4335;
+  border-radius: 10px;
+  padding: 12px 16px;
+  color: #c5221f;
+  font-size: 14px;
+  margin-top: 12px;
+  width: 100%;
+}
+
+.splash-btn {
+  width: 100%;
+  background: linear-gradient(135deg, #1557b0, #1a73e8);
+  color: #fff;
+  border: none;
+  border-radius: 14px;
+  padding: 20px;
+  font-size: 19px;
+  font-weight: 700;
+  cursor: pointer;
+  box-shadow: 0 4px 20px rgba(21, 87, 176, 0.4);
+  margin-top: 12px;
+}
+
+/* ── Sucesso ──────────────────────────────────────────────── */
+.sucesso-tela {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  min-height: 100vh;
+  padding: 32px;
+  text-align: center;
+  background: #fff;
+  width: 100%;
+  max-width: 600px;
+}
+
+.sucesso-icon {
+  font-size: 72px;
+  margin-bottom: 16px;
+}
+
+.sucesso-titulo {
+  font-size: 26px;
+  font-weight: 800;
+  color: #137333;
+  margin-bottom: 8px;
+}
+
+.sucesso-sub {
+  font-size: 16px;
+  color: #666;
+  margin-bottom: 32px;
+}
+
+.btn-novo {
+  padding: 18px 48px;
+  background: #1a73e8;
+  color: #fff;
+  border: none;
+  border-radius: 14px;
+  font-size: 17px;
+  font-weight: 700;
+  cursor: pointer;
+}
