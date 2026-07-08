@@ -1,4 +1,4 @@
-const CACHE_NAME = "ecoblaster-v1";
+const CACHE_NAME = "ecoblaster-v2";
 
 self.addEventListener("install", () => {
   self.skipWaiting();
@@ -22,7 +22,7 @@ self.addEventListener("fetch", (event) => {
   event.respondWith(
     caches.open(CACHE_NAME).then(async (cache) => {
       try {
-        const resposta = await fetch(event.request);
+        const resposta = await fetch(event.request, { cache: "no-store" });
         if (resposta && resposta.status === 200) {
           cache.put(event.request, resposta.clone());
         }
