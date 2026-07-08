@@ -41,6 +41,8 @@ export default function LoginScreen({ onLogin }: { onLogin: (sessao: SessaoOpera
 
   return (
     <div className="splash">
+      {/* eslint-disable-next-line @next/next/no-img-element */}
+      <img src="/icons/logo-watermark.png" alt="" aria-hidden="true" className="splash-watermark" />
       <div className="splash-card">
         <div className="splash-titulo">EcoBlaster</div>
         <div className="splash-sub">Ecoelétrica Engenharia · Escavação</div>

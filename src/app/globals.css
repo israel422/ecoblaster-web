@@ -420,6 +420,19 @@ textarea.campo-grande {
   background: linear-gradient(135deg, #1b4fa2, #0d2c63);
   background-size: cover;
   background-position: center;
+  overflow: hidden;
+}
+
+.splash-watermark {
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%);
+  width: 140%;
+  max-width: 900px;
+  opacity: 0.1;
+  pointer-events: none;
+  z-index: 0;
 }
 
 .splash-card {
