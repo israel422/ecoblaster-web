@@ -340,6 +340,60 @@ textarea.campo-grande {
   width: 48px;
 }
 
+.dialogo-tela {
+  position: fixed;
+  inset: 0;
+  background: rgba(0, 0, 0, 0.6);
+  z-index: 350;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 20px;
+}
+
+.dialogo-card {
+  background: #fff;
+  border-radius: 18px;
+  padding: 24px;
+  width: 100%;
+  max-width: 380px;
+  box-shadow: 0 12px 40px rgba(0, 0, 0, 0.3);
+}
+
+.dialogo-titulo {
+  font-size: 18px;
+  font-weight: 800;
+  color: #1b4fa2;
+  margin-bottom: 8px;
+}
+
+.dialogo-mensagem {
+  font-size: 15px;
+  color: #444;
+  line-height: 1.5;
+  margin-bottom: 20px;
+}
+
+.dialogo-botoes {
+  display: flex;
+  gap: 10px;
+}
+
+.dialogo-botoes button {
+  flex: 1;
+  padding: 14px;
+  border-radius: 12px;
+  font-size: 14px;
+  font-weight: 700;
+  cursor: pointer;
+  border: none;
+}
+
+.turno-btn-descartar-texto {
+  background: #ea4335;
+  color: #fff;
+}
+
 .foto-del {
   background: #fef2f2;
   border: 1.5px solid #ea4335;

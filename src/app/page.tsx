@@ -5,6 +5,7 @@ import LoginScreen from "@/components/LoginScreen";
 import WizardShell from "@/components/wizard/WizardShell";
 import TurnosAbertosModal from "@/components/turnos/TurnosAbertosModal";
 import OfflineBanner from "@/components/OfflineBanner";
+import AlertModal from "@/components/ui/AlertModal";
 import type { SessaoOperador } from "@/types";
 import type { TurnoRegistro } from "@/lib/idb/turnosDb";
 import { turnoCompleto } from "@/lib/idb/turnosDb";
@@ -16,6 +17,7 @@ export default function Home() {
   const [turnoInicial, setTurnoInicial] = useState<TurnoRegistro | null>(null);
   const [passoInicial, setPassoInicial] = useState(1);
   const [wizardKey, setWizardKey] = useState(0);
+  const [avisoBloqueio, setAvisoBloqueio] = useState<string | null>(null);
 
   function handleLogin(s: SessaoOperador) {
     setSessao(s);
@@ -48,7 +50,7 @@ export default function Home() {
       const nomes = pendentes
         .map((t) => `Obra ${t.remoto?.obra || t.local?.obra}${t.remoto ? " (outro aparelho)" : ""}`)
         .join(", ");
-      alert(`Termine de tirar todas as fotos antes de iniciar um novo registro. Pendente(s): ${nomes}`);
+      setAvisoBloqueio(`Termine de tirar todas as fotos antes de iniciar um novo registro. Pendente(s): ${nomes}`);
       return;
     }
     setTurnoInicial(null);
@@ -72,6 +74,13 @@ export default function Home() {
       )}
       {sessao && !mostrarTurnos && (
         <WizardShell key={wizardKey} sessao={sessao} turnoInicial={turnoInicial} passoInicial={passoInicial} />
+      )}
+      {avisoBloqueio && (
+        <AlertModal
+          titulo="Fotos pendentes"
+          mensagem={avisoBloqueio}
+          onFechar={() => setAvisoBloqueio(null)}
+        />
       )}
     </>
   );

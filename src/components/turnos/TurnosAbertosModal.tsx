@@ -5,6 +5,7 @@ import { obterTurnosParaExibir, type TurnoExibicao } from "@/lib/turnos/obterTur
 import { turnoCompleto, fotosFeitas, apagarTurno, type TurnoRegistro } from "@/lib/idb/turnosDb";
 import { encerrarTurnoNoServidor } from "@/lib/sync/turnosServidor";
 import { sincronizarTurno } from "@/lib/sync/sincronizarTurno";
+import ConfirmModal from "@/components/ui/ConfirmModal";
 import type { SessaoOperador } from "@/types";
 
 interface Props {
@@ -20,6 +21,7 @@ export default function TurnosAbertosModal({ sessao, onContinuarFotos, onEditar,
   const [sincronizando, setSincronizando] = useState<string | null>(null);
   const [progressoPorChave, setProgressoPorChave] = useState<Record<string, { feitas: number; total: number }>>({});
   const [erroPorChave, setErroPorChave] = useState<Record<string, string>>({});
+  const [itemParaDescartar, setItemParaDescartar] = useState<TurnoExibicao | null>(null);
 
   const atualizar = useCallback(async () => {
     const lista = await obterTurnosParaExibir(sessao.cpf);
@@ -50,8 +52,10 @@ export default function TurnosAbertosModal({ sessao, onContinuarFotos, onEditar,
     setSincronizando(null);
   }
 
-  async function descartar(item: TurnoExibicao) {
-    if (!confirm("Descartar esse turno e todas as fotos tiradas nele? Essa ação não pode ser desfeita.")) return;
+  async function descartarConfirmado() {
+    const item = itemParaDescartar;
+    setItemParaDescartar(null);
+    if (!item) return;
     if (item.local) {
       if (item.local.id) await apagarTurno(item.local.id);
       if (item.local.serverId) await encerrarTurnoNoServidor(item.local.serverId, sessao.cpf);
@@ -77,7 +81,7 @@ export default function TurnosAbertosModal({ sessao, onContinuarFotos, onEditar,
                 <div className="turno-status">🔒 Turno iniciado em outro aparelho</div>
                 {sessao.admin && (
                   <div className="turno-botoes">
-                    <button type="button" className="foto-del turno-btn-descartar" onClick={() => descartar(item)}>
+                    <button type="button" className="foto-del turno-btn-descartar" onClick={() => setItemParaDescartar(item)}>
                       🗑️
                     </button>
                   </div>
@@ -136,7 +140,7 @@ export default function TurnosAbertosModal({ sessao, onContinuarFotos, onEditar,
                   <button
                     type="button"
                     className="foto-del turno-btn-descartar"
-                    onClick={() => descartar(item)}
+                    onClick={() => setItemParaDescartar(item)}
                     disabled={estaEnviando}
                   >
                     🗑️
@@ -159,6 +163,15 @@ export default function TurnosAbertosModal({ sessao, onContinuarFotos, onEditar,
           </a>
         )}
       </div>
+
+      {itemParaDescartar && (
+        <ConfirmModal
+          titulo="Descartar turno"
+          mensagem="Descartar esse turno e todas as fotos tiradas nele? Essa ação não pode ser desfeita."
+          onConfirmar={descartarConfirmado}
+          onCancelar={() => setItemParaDescartar(null)}
+        />
+      )}
     </div>
   );
 }

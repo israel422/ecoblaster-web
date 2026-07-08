@@ -4,6 +4,7 @@ import { useRef, useState } from "react";
 import type { FotoItem } from "@/types";
 import { stampPhoto, formatarDataHora } from "@/lib/camera/stampPhoto";
 import PhotoPreviewModal from "@/components/camera/PhotoPreviewModal";
+import ConfirmModal from "@/components/ui/ConfirmModal";
 
 interface Props {
   obra: string;
@@ -32,6 +33,7 @@ export default function StepFotos({
   const fotoIndexRef = useRef<number>(-1);
   const gpsRef = useRef<{ lat: number; lon: number } | null>(null);
   const [previewBlob, setPreviewBlob] = useState<Blob | null>(null);
+  const [idxParaApagar, setIdxParaApagar] = useState<number | null>(null);
 
   const feitas = fotos.filter((f) => f.blob).length;
 
@@ -92,10 +94,12 @@ export default function StepFotos({
     tirarFoto(fotoIndexRef.current);
   }
 
-  function apagarFoto(idx: number) {
-    if (!confirm("Apagar esta foto? Você poderá tirá-la novamente.")) return;
+  function apagarFotoConfirmado() {
+    const idx = idxParaApagar;
+    if (idx === null) return;
     const novaLista = fotos.map((f, i) => (i === idx ? { ...f, blob: undefined } : f));
     onFotosChange(novaLista);
+    setIdxParaApagar(null);
   }
 
   let cavaAtual = 0;
@@ -181,7 +185,7 @@ export default function StepFotos({
                     className="foto-del"
                     onClick={(e) => {
                       e.stopPropagation();
-                      apagarFoto(idx);
+                      setIdxParaApagar(idx);
                     }}
                   >
                     🗑️
@@ -206,6 +210,15 @@ export default function StepFotos({
 
       {previewBlob && (
         <PhotoPreviewModal blob={previewBlob} onConfirmar={confirmarFoto} onTirarNovamente={tirarNovamente} />
+      )}
+
+      {idxParaApagar !== null && (
+        <ConfirmModal
+          titulo="Apagar foto"
+          mensagem="Apagar esta foto? Você poderá tirá-la novamente."
+          onConfirmar={apagarFotoConfirmado}
+          onCancelar={() => setIdxParaApagar(null)}
+        />
       )}
     </>
   );
