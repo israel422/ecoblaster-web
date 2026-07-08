@@ -2,7 +2,7 @@
 
 import { useRef, useState } from "react";
 import type { SessaoOperador, DadosRegistro, FotoItem } from "@/types";
-import { FOTOS_CONFIG } from "@/lib/config/fotosConfig";
+import { montarFotos } from "@/lib/wizard/montarFotos";
 import { salvarTurno, apagarTurno, type TurnoRegistro } from "@/lib/idb/turnosDb";
 import { registrarTurnoAbertoNoServidor } from "@/lib/sync/turnosServidor";
 import { sincronizarTurno } from "@/lib/sync/sincronizarTurno";
@@ -20,18 +20,6 @@ const TOTAL_PASSOS = 7;
 function hojeISO(): string {
   const h = new Date();
   return `${h.getFullYear()}-${String(h.getMonth() + 1).padStart(2, "0")}-${String(h.getDate()).padStart(2, "0")}`;
-}
-
-function montarFotos(tipoCava: string, totalCavas: string): FotoItem[] {
-  const config = FOTOS_CONFIG[tipoCava] || [];
-  const total = parseInt(totalCavas, 10) || 1;
-  const fotos: FotoItem[] = [];
-  for (let c = 1; c <= total; c++) {
-    config.forEach((label, i) => {
-      fotos.push({ cava: c, fotoNum: i + 1, label });
-    });
-  }
-  return fotos;
 }
 
 interface Props {
