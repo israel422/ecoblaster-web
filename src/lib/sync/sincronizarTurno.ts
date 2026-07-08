@@ -35,8 +35,9 @@ export async function sincronizarTurno(
       feitas++;
       onProgress?.(feitas, total);
       await salvarTurno({ ...turno, fotos, id: turno.id });
-    } catch {
-      return { sucesso: false, erro: "Falha ao enviar fotos. Verifique sua conexão e tente novamente." };
+    } catch (err) {
+      const detalhe = err instanceof Error ? err.message : String(err);
+      return { sucesso: false, erro: `Falha ao enviar foto: ${detalhe}` };
     }
   }
 
