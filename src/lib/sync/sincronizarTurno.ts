@@ -1,0 +1,69 @@
+import { upload } from "@vercel/blob/client";
+import { salvarTurno, type TurnoRegistro } from "@/lib/idb/turnosDb";
+
+export interface ResultadoSync {
+  sucesso: boolean;
+  erro?: string;
+}
+
+// Envia as fotos ainda não enviadas (uma de cada vez, persistindo a URL local a
+// cada sucesso pra não perder progresso se a conexão cair no meio), depois
+// registra o turno de vez no banco. Usado tanto no "Registrar" do wizard quanto
+// no botão "Sincronizar" da tela de Turnos em Aberto.
+export async function sincronizarTurno(
+  turno: TurnoRegistro,
+  onProgress?: (feitas: number, total: number) => void
+): Promise<ResultadoSync> {
+  const fotos = [...turno.fotos];
+  const total = fotos.length;
+  let feitas = fotos.filter((f) => f.uploadedUrl).length;
+  onProgress?.(feitas, total);
+
+  for (let i = 0; i < fotos.length; i++) {
+    const foto = fotos[i];
+    if (foto.uploadedUrl) continue;
+    if (!foto.blob) {
+      return { sucesso: false, erro: `Falta tirar a foto: ${foto.label} (cava ${foto.cava})` };
+    }
+    try {
+      const nomeArquivo = `obra_${turno.obra}/cava${foto.cava}_foto${foto.fotoNum}_${Date.now()}.jpg`;
+      const resultado = await upload(nomeArquivo, foto.blob, {
+        access: "public",
+        handleUploadUrl: "/api/blob/upload",
+      });
+      fotos[i] = { ...foto, uploadedUrl: resultado.url };
+      feitas++;
+      onProgress?.(feitas, total);
+      await salvarTurno({ ...turno, fotos, id: turno.id });
+    } catch {
+      return { sucesso: false, erro: "Falha ao enviar fotos. Verifique sua conexão e tente novamente." };
+    }
+  }
+
+  const payload = {
+    data: turno.data,
+    obra: turno.obra,
+    tipoCava: turno.tipoCava,
+    totalCavas: Number(turno.totalCavas),
+    operador: turno.operador,
+    cpf: turno.cpf,
+    observacao: turno.observacao,
+    fotos: fotos.map((f) => ({ cava: f.cava, fotoNum: f.fotoNum, label: f.label, url: f.uploadedUrl! })),
+    turnoServerId: turno.serverId,
+  };
+
+  try {
+    const resp = await fetch("/api/registros", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify(payload),
+    });
+    const json = await resp.json();
+    if (!resp.ok || !json.sucesso) {
+      return { sucesso: false, erro: json.erro || "Erro ao salvar registro." };
+    }
+    return { sucesso: true };
+  } catch {
+    return { sucesso: false, erro: "Sem conexão. As fotos já foram enviadas, tente registrar de novo quando tiver internet." };
+  }
+}

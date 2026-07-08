@@ -3,7 +3,9 @@
 import { useRef, useState } from "react";
 import type { SessaoOperador, DadosRegistro, FotoItem } from "@/types";
 import { FOTOS_CONFIG } from "@/lib/config/fotosConfig";
-import { salvarTurno, type TurnoRegistro } from "@/lib/idb/turnosDb";
+import { salvarTurno, apagarTurno, type TurnoRegistro } from "@/lib/idb/turnosDb";
+import { registrarTurnoAbertoNoServidor } from "@/lib/sync/turnosServidor";
+import { sincronizarTurno } from "@/lib/sync/sincronizarTurno";
 import Progresso from "./Progresso";
 import StepObra from "./StepObra";
 import StepData from "./StepData";
@@ -44,9 +46,11 @@ export default function WizardShell({ sessao }: { sessao: SessaoOperador }) {
   const [fotos, setFotos] = useState<FotoItem[]>([]);
   const [enviando, setEnviando] = useState(false);
   const [erroEnvio, setErroEnvio] = useState<string | null>(null);
+  const [progresso, setProgresso] = useState<{ feitas: number; total: number } | null>(null);
   const [sucesso, setSucesso] = useState(false);
 
   const turnoIdRef = useRef<number | undefined>(undefined);
+  const serverIdRef = useRef<string | undefined>(undefined);
   const fotosGeradasPara = useRef<{ tipo: string; total: string } | null>(null);
 
   const [erroObra, setErroObra] = useState(false);
@@ -55,8 +59,10 @@ export default function WizardShell({ sessao }: { sessao: SessaoOperador }) {
   const [erroFotos, setErroFotos] = useState(false);
 
   async function persistirTurno(fotosAtuais: FotoItem[]) {
+    const eraNovo = !turnoIdRef.current;
     const turno: TurnoRegistro = {
       id: turnoIdRef.current,
+      serverId: serverIdRef.current,
       cpf: sessao.cpf,
       operador: sessao.nome,
       obra: dados.obra,
@@ -70,6 +76,14 @@ export default function WizardShell({ sessao }: { sessao: SessaoOperador }) {
     };
     const id = await salvarTurno(turno);
     turnoIdRef.current = id;
+
+    if (eraNovo) {
+      const serverId = await registrarTurnoAbertoNoServidor(sessao.cpf, dados.obra, dados.data);
+      if (serverId) {
+        serverIdRef.current = serverId;
+        await salvarTurno({ ...turno, id, serverId });
+      }
+    }
   }
 
   function irPara(n: number) {
@@ -121,10 +135,32 @@ export default function WizardShell({ sessao }: { sessao: SessaoOperador }) {
   async function enviar() {
     setEnviando(true);
     setErroEnvio(null);
-    // TODO: upload das fotos pro Blob + POST /api/registros (próxima etapa)
-    await new Promise((r) => setTimeout(r, 500));
+    setProgresso(null);
+
+    const turno: TurnoRegistro = {
+      id: turnoIdRef.current,
+      serverId: serverIdRef.current,
+      cpf: sessao.cpf,
+      operador: sessao.nome,
+      obra: dados.obra,
+      data: dados.data,
+      tipoCava: dados.tipoCava,
+      totalCavas: dados.totalCavas,
+      observacao: dados.observacao,
+      fotos,
+      criadoEm: new Date().toISOString(),
+      atualizadoEm: new Date().toISOString(),
+    };
+
+    const resultado = await sincronizarTurno(turno, (feitas, total) => setProgresso({ feitas, total }));
+
+    if (resultado.sucesso) {
+      if (turnoIdRef.current) await apagarTurno(turnoIdRef.current);
+      setSucesso(true);
+    } else {
+      setErroEnvio(resultado.erro || "Erro ao enviar. Tente novamente.");
+    }
     setEnviando(false);
-    setSucesso(true);
   }
 
   if (sucesso) {
@@ -206,6 +242,7 @@ export default function WizardShell({ sessao }: { sessao: SessaoOperador }) {
           valor={dados.observacao}
           onMudar={(observacao) => setDados((d) => ({ ...d, observacao }))}
           enviando={enviando}
+          progresso={progresso}
           erro={erroEnvio}
           onVoltar={() => irPara(6)}
           onEnviar={enviar}

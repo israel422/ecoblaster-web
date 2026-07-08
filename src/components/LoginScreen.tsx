@@ -30,6 +30,13 @@ export default function LoginScreen({ onLogin }: { onLogin: (sessao: SessaoOpera
       categoria: operador.categoria,
       admin: operador.admin,
     });
+
+    // melhor esforço — se estiver offline, o login local já foi liberado acima
+    fetch("/api/acessos", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ cpf: digits }),
+    }).catch(() => {});
   }
 
   return (
