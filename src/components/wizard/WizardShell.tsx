@@ -34,24 +34,36 @@ function montarFotos(tipoCava: string, totalCavas: string): FotoItem[] {
   return fotos;
 }
 
-export default function WizardShell({ sessao }: { sessao: SessaoOperador }) {
-  const [passo, setPasso] = useState(1);
-  const [dados, setDados] = useState<DadosRegistro>({
-    obra: "",
-    data: hojeISO(),
-    tipoCava: "",
-    totalCavas: "",
-    observacao: "",
-  });
-  const [fotos, setFotos] = useState<FotoItem[]>([]);
+interface Props {
+  sessao: SessaoOperador;
+  turnoInicial?: TurnoRegistro | null;
+  passoInicial?: number;
+}
+
+export default function WizardShell({ sessao, turnoInicial, passoInicial }: Props) {
+  const [passo, setPasso] = useState(passoInicial ?? 1);
+  const [dados, setDados] = useState<DadosRegistro>(
+    turnoInicial
+      ? {
+          obra: turnoInicial.obra,
+          data: turnoInicial.data,
+          tipoCava: turnoInicial.tipoCava,
+          totalCavas: turnoInicial.totalCavas,
+          observacao: turnoInicial.observacao,
+        }
+      : { obra: "", data: hojeISO(), tipoCava: "", totalCavas: "", observacao: "" }
+  );
+  const [fotos, setFotos] = useState<FotoItem[]>(turnoInicial?.fotos ?? []);
   const [enviando, setEnviando] = useState(false);
   const [erroEnvio, setErroEnvio] = useState<string | null>(null);
   const [progresso, setProgresso] = useState<{ feitas: number; total: number } | null>(null);
   const [sucesso, setSucesso] = useState(false);
 
-  const turnoIdRef = useRef<number | undefined>(undefined);
-  const serverIdRef = useRef<string | undefined>(undefined);
-  const fotosGeradasPara = useRef<{ tipo: string; total: string } | null>(null);
+  const turnoIdRef = useRef<number | undefined>(turnoInicial?.id);
+  const serverIdRef = useRef<string | undefined>(turnoInicial?.serverId);
+  const fotosGeradasPara = useRef<{ tipo: string; total: string } | null>(
+    turnoInicial ? { tipo: turnoInicial.tipoCava, total: turnoInicial.totalCavas } : null
+  );
 
   const [erroObra, setErroObra] = useState(false);
   const [erroTipo, setErroTipo] = useState(false);
