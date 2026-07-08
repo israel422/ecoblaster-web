@@ -194,6 +194,15 @@ export default function WizardShell({ sessao, turnoInicial, passoInicial }: Prop
     <div className="tela">
       <Progresso passo={passo} total={TOTAL_PASSOS} />
 
+      {sessao.admin && (
+        <a
+          href="/painel"
+          style={{ position: "fixed", top: 8, right: 12, fontSize: 12, color: "#1a73e8", zIndex: 50 }}
+        >
+          📊 Painel
+        </a>
+      )}
+
       {passo === 1 && (
         <StepObra
           valor={dados.obra}

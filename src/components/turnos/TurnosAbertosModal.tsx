@@ -150,6 +150,14 @@ export default function TurnosAbertosModal({ sessao, onContinuarFotos, onEditar,
         <button type="button" className="btn-avancar" onClick={onNovoRegistro} style={{ width: "100%", marginTop: 6 }}>
           + Novo Registro
         </button>
+        {sessao.admin && (
+          <a
+            href="/painel"
+            style={{ display: "block", textAlign: "center", marginTop: 12, fontSize: 13, color: "#1a73e8" }}
+          >
+            📊 Ver Painel de Registros
+          </a>
+        )}
       </div>
     </div>
   );
