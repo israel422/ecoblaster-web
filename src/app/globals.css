@@ -249,6 +249,18 @@ textarea.campo-grande {
   color: #1a73e8;
 }
 
+.foto-del {
+  background: #fef2f2;
+  border: 1.5px solid #ea4335;
+  color: #c5221f;
+  border-radius: 10px;
+  width: 40px;
+  height: 40px;
+  font-size: 17px;
+  flex-shrink: 0;
+  cursor: pointer;
+}
+
 /* ── Splash / login ───────────────────────────────────────── */
 .splash {
   position: fixed;

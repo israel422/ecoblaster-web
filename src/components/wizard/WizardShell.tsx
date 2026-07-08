@@ -1,19 +1,35 @@
 "use client";
 
-import { useState } from "react";
-import type { SessaoOperador, DadosRegistro } from "@/types";
+import { useRef, useState } from "react";
+import type { SessaoOperador, DadosRegistro, FotoItem } from "@/types";
+import { FOTOS_CONFIG } from "@/lib/config/fotosConfig";
+import { salvarTurno, type TurnoRegistro } from "@/lib/idb/turnosDb";
 import Progresso from "./Progresso";
 import StepObra from "./StepObra";
 import StepData from "./StepData";
 import StepOperador from "./StepOperador";
 import StepTipoCava from "./StepTipoCava";
 import StepTotalCavas from "./StepTotalCavas";
+import StepFotos from "./StepFotos";
+import StepObservacao from "./StepObservacao";
 
 const TOTAL_PASSOS = 7;
 
 function hojeISO(): string {
   const h = new Date();
   return `${h.getFullYear()}-${String(h.getMonth() + 1).padStart(2, "0")}-${String(h.getDate()).padStart(2, "0")}`;
+}
+
+function montarFotos(tipoCava: string, totalCavas: string): FotoItem[] {
+  const config = FOTOS_CONFIG[tipoCava] || [];
+  const total = parseInt(totalCavas, 10) || 1;
+  const fotos: FotoItem[] = [];
+  for (let c = 1; c <= total; c++) {
+    config.forEach((label, i) => {
+      fotos.push({ cava: c, fotoNum: i + 1, label });
+    });
+  }
+  return fotos;
 }
 
 export default function WizardShell({ sessao }: { sessao: SessaoOperador }) {
@@ -25,9 +41,36 @@ export default function WizardShell({ sessao }: { sessao: SessaoOperador }) {
     totalCavas: "",
     observacao: "",
   });
+  const [fotos, setFotos] = useState<FotoItem[]>([]);
+  const [enviando, setEnviando] = useState(false);
+  const [erroEnvio, setErroEnvio] = useState<string | null>(null);
+  const [sucesso, setSucesso] = useState(false);
+
+  const turnoIdRef = useRef<number | undefined>(undefined);
+  const fotosGeradasPara = useRef<{ tipo: string; total: string } | null>(null);
+
   const [erroObra, setErroObra] = useState(false);
   const [erroTipo, setErroTipo] = useState(false);
   const [erroTotal, setErroTotal] = useState(false);
+  const [erroFotos, setErroFotos] = useState(false);
+
+  async function persistirTurno(fotosAtuais: FotoItem[]) {
+    const turno: TurnoRegistro = {
+      id: turnoIdRef.current,
+      cpf: sessao.cpf,
+      operador: sessao.nome,
+      obra: dados.obra,
+      data: dados.data,
+      tipoCava: dados.tipoCava,
+      totalCavas: dados.totalCavas,
+      observacao: dados.observacao,
+      fotos: fotosAtuais,
+      criadoEm: new Date().toISOString(),
+      atualizadoEm: new Date().toISOString(),
+    };
+    const id = await salvarTurno(turno);
+    turnoIdRef.current = id;
+  }
 
   function irPara(n: number) {
     if (n === 2 && !dados.obra) {
@@ -45,7 +88,58 @@ export default function WizardShell({ sessao }: { sessao: SessaoOperador }) {
       setTimeout(() => setErroTotal(false), 2500);
       return;
     }
+
+    let fotosParaUsar = fotos;
+    if (n === 6) {
+      const jaGerado =
+        fotosGeradasPara.current?.tipo === dados.tipoCava && fotosGeradasPara.current?.total === dados.totalCavas;
+      if (!jaGerado || fotos.length === 0) {
+        fotosParaUsar = montarFotos(dados.tipoCava, dados.totalCavas);
+        fotosGeradasPara.current = { tipo: dados.tipoCava, total: dados.totalCavas };
+        setFotos(fotosParaUsar);
+      }
+    }
+
+    if (n === 7 && !(fotos.length > 0 && fotos.every((f) => f.blob))) {
+      setErroFotos(true);
+      setTimeout(() => setErroFotos(false), 3000);
+      return;
+    }
+
+    if (n >= 6) {
+      persistirTurno(fotosParaUsar);
+    }
+
     setPasso(n);
+  }
+
+  function atualizarFotos(novaLista: FotoItem[]) {
+    setFotos(novaLista);
+    persistirTurno(novaLista);
+  }
+
+  async function enviar() {
+    setEnviando(true);
+    setErroEnvio(null);
+    // TODO: upload das fotos pro Blob + POST /api/registros (próxima etapa)
+    await new Promise((r) => setTimeout(r, 500));
+    setEnviando(false);
+    setSucesso(true);
+  }
+
+  if (sucesso) {
+    return (
+      <div className="sucesso-tela">
+        <div className="sucesso-icon">✅</div>
+        <div className="sucesso-titulo">Registrado!</div>
+        <div className="sucesso-sub">
+          Obra {dados.obra} · {dados.tipoCava} · {dados.totalCavas} cavas
+        </div>
+        <button className="btn-novo" onClick={() => window.location.reload()}>
+          Novo Registro
+        </button>
+      </div>
+    );
   }
 
   return (
@@ -94,25 +188,29 @@ export default function WizardShell({ sessao }: { sessao: SessaoOperador }) {
       )}
 
       {passo === 6 && (
-        <>
-          <div className="passo-titulo">Fotos das Cavas</div>
-          <div className="passo-sub">
-            {dados.totalCavas} cava(s) · Tipo: {dados.tipoCava}
-          </div>
-          <div className="passo-sub" style={{ color: "#1a73e8" }}>
-            🚧 Checklist de fotos entra na próxima etapa da migração.
-          </div>
-          <div className="rodape">
-            <button className="btn-voltar" onClick={() => irPara(5)}>
-              ← Voltar
-            </button>
-          </div>
-        </>
+        <StepFotos
+          obra={dados.obra}
+          tipoCava={dados.tipoCava}
+          totalCavas={dados.totalCavas}
+          operador={sessao.nome}
+          fotos={fotos}
+          onFotosChange={atualizarFotos}
+          erro={erroFotos}
+          onVoltar={() => irPara(5)}
+          onAvancar={() => irPara(7)}
+        />
       )}
 
-      <p style={{ marginTop: 40, fontSize: 12, color: "#aaa", textAlign: "center" }}>
-        Dados atuais (debug): {JSON.stringify(dados)}
-      </p>
+      {passo === 7 && (
+        <StepObservacao
+          valor={dados.observacao}
+          onMudar={(observacao) => setDados((d) => ({ ...d, observacao }))}
+          enviando={enviando}
+          erro={erroEnvio}
+          onVoltar={() => irPara(6)}
+          onEnviar={enviar}
+        />
+      )}
     </div>
   );
 }
