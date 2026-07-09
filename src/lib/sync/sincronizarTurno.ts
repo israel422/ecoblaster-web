@@ -6,6 +6,31 @@ export interface ResultadoSync {
   erro?: string;
 }
 
+const TIMEOUT_MS = 25_000;
+
+// Envia uma foto com um limite de tempo — sem isso, em sinal fraco o navegador
+// pode ficar esperando a requisição indefinidamente e a tela parece travada.
+// Tenta de novo uma vez antes de desistir.
+async function enviarFotoComTimeout(nomeArquivo: string, blob: Blob): Promise<{ url: string }> {
+  for (let tentativa = 1; tentativa <= 2; tentativa++) {
+    const controller = new AbortController();
+    const timer = setTimeout(() => controller.abort(), TIMEOUT_MS);
+    try {
+      const resultado = await upload(nomeArquivo, blob, {
+        access: "public",
+        handleUploadUrl: "/api/blob/upload",
+        abortSignal: controller.signal,
+      });
+      return resultado;
+    } catch (err) {
+      if (tentativa === 2) throw err;
+    } finally {
+      clearTimeout(timer);
+    }
+  }
+  throw new Error("Falha ao enviar após tentativas");
+}
+
 // Envia as fotos ainda não enviadas (uma de cada vez, persistindo a URL local a
 // cada sucesso pra não perder progresso se a conexão cair no meio), depois
 // registra o turno de vez no banco. Usado tanto no "Registrar" do wizard quanto
@@ -27,17 +52,22 @@ export async function sincronizarTurno(
     }
     try {
       const nomeArquivo = `obra_${turno.obra}/cava${foto.cava}_foto${foto.fotoNum}_${Date.now()}.jpg`;
-      const resultado = await upload(nomeArquivo, foto.blob, {
-        access: "public",
-        handleUploadUrl: "/api/blob/upload",
-      });
+      const resultado = await enviarFotoComTimeout(nomeArquivo, foto.blob);
       fotos[i] = { ...foto, uploadedUrl: resultado.url };
       feitas++;
       onProgress?.(feitas, total);
       await salvarTurno({ ...turno, fotos, id: turno.id });
     } catch (err) {
-      const detalhe = err instanceof Error ? err.message : String(err);
-      return { sucesso: false, erro: `Falha ao enviar foto: ${detalhe}` };
+      const abortou = err instanceof DOMException && err.name === "AbortError";
+      const detalhe = abortou
+        ? "sinal fraco, a foto não terminou de enviar"
+        : err instanceof Error
+          ? err.message
+          : String(err);
+      return {
+        sucesso: false,
+        erro: `Falha ao enviar foto (${detalhe}). O que já enviou foi salvo, toque em Sincronizar de novo quando o sinal melhorar.`,
+      };
     }
   }
 
