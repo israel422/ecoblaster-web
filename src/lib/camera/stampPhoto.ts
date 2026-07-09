@@ -16,7 +16,7 @@ export function stampPhoto(file: File, dados: DadosCarimbo): Promise<Blob> {
     reader.onload = (e) => {
       const img = new Image();
       img.onload = () => {
-        const MAX = 1280;
+        const MAX = 1024;
         let w = img.width;
         let h = img.height;
         if (w > MAX) {
@@ -76,7 +76,7 @@ export function stampPhoto(file: File, dados: DadosCarimbo): Promise<Blob> {
             else reject(new Error("Falha ao gerar imagem"));
           },
           "image/jpeg",
-          0.72
+          0.6
         );
       };
       img.onerror = () => reject(new Error("Falha ao carregar imagem"));

@@ -6,13 +6,13 @@ export interface ResultadoSync {
   erro?: string;
 }
 
-const TIMEOUT_MS = 25_000;
+const TIMEOUT_MS = 45_000;
 
-// Envia uma foto com um limite de tempo — sem isso, em sinal fraco o navegador
+// Envia uma foto com um limite de tempo — sem isso, em conexão lenta o navegador
 // pode ficar esperando a requisição indefinidamente e a tela parece travada.
-// Tenta de novo uma vez antes de desistir.
+// Tenta de novo até 2 vezes antes de desistir.
 async function enviarFotoComTimeout(nomeArquivo: string, blob: Blob): Promise<{ url: string }> {
-  for (let tentativa = 1; tentativa <= 2; tentativa++) {
+  for (let tentativa = 1; tentativa <= 3; tentativa++) {
     const controller = new AbortController();
     const timer = setTimeout(() => controller.abort(), TIMEOUT_MS);
     try {
@@ -23,7 +23,7 @@ async function enviarFotoComTimeout(nomeArquivo: string, blob: Blob): Promise<{ 
       });
       return resultado;
     } catch (err) {
-      if (tentativa === 2) throw err;
+      if (tentativa === 3) throw err;
     } finally {
       clearTimeout(timer);
     }
