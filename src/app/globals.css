@@ -501,6 +501,190 @@ textarea.campo-grande {
   margin-top: 12px;
 }
 
+/* ── Login (tela inicial do EcoBlaster) ──────────────────────── */
+.login-tela {
+  display: flex;
+  flex-direction: column;
+  min-height: 100vh;
+  width: 100%;
+}
+
+.login-hero {
+  position: relative;
+  height: 260px;
+  flex-shrink: 0;
+  overflow: hidden;
+}
+
+.login-hero-img {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  object-position: 30% center;
+}
+
+.login-hero-texto {
+  position: relative;
+  z-index: 1;
+  height: 100%;
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  padding: 20px 24px;
+}
+
+.login-hero-titulo {
+  color: #fff;
+  font-size: 20px;
+  font-weight: 800;
+  line-height: 1.3;
+  letter-spacing: 0.5px;
+  text-shadow: 0 2px 10px rgba(0, 0, 0, 0.35);
+}
+
+.login-hero-linha {
+  width: 46px;
+  height: 3px;
+  background: #34a853;
+  border-radius: 2px;
+  margin: 12px 0;
+}
+
+.login-hero-sub {
+  color: #eef4fd;
+  font-size: 13px;
+  line-height: 1.5;
+  max-width: 280px;
+  text-shadow: 0 1px 6px rgba(0, 0, 0, 0.35);
+}
+
+.login-card-wrap {
+  flex: 1;
+  display: flex;
+  justify-content: center;
+  padding: 28px 20px 40px;
+  background: #fff;
+}
+
+.login-card {
+  width: 100%;
+  max-width: 380px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  text-align: center;
+}
+
+.login-logo {
+  width: 190px;
+  margin-bottom: 4px;
+}
+
+.login-app-nome {
+  font-size: 22px;
+  font-weight: 800;
+  color: #1b4fa2;
+  letter-spacing: 1.5px;
+  margin-bottom: 18px;
+}
+
+.login-boas-vindas {
+  font-size: 22px;
+  font-weight: 800;
+  color: #1b4fa2;
+  margin-bottom: 4px;
+}
+
+.login-instrucao {
+  font-size: 14px;
+  color: #666;
+  margin-bottom: 22px;
+}
+
+.login-input-wrap {
+  position: relative;
+}
+
+.login-input {
+  padding-right: 46px;
+}
+
+.login-input-icon {
+  position: absolute;
+  right: 16px;
+  top: 50%;
+  transform: translateY(-50%);
+  font-size: 18px;
+  opacity: 0.45;
+  pointer-events: none;
+}
+
+.login-btn {
+  width: 100%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 10px;
+  background: linear-gradient(135deg, #1557b0, #1a73e8);
+  color: #fff;
+  border: none;
+  border-radius: 14px;
+  padding: 20px;
+  font-size: 18px;
+  font-weight: 700;
+  cursor: pointer;
+  box-shadow: 0 4px 20px rgba(21, 87, 176, 0.35);
+  margin-top: 14px;
+}
+
+.login-seguro {
+  font-size: 13px;
+  color: #888;
+  margin-top: 20px;
+  padding-top: 16px;
+  border-top: 1px solid #eee;
+  width: 100%;
+}
+
+@media (min-width: 860px) {
+  .login-tela {
+    flex-direction: row;
+  }
+
+  .login-hero {
+    height: auto;
+    flex: 1 1 46%;
+  }
+
+  .login-hero-texto {
+    padding: 40px 60px;
+  }
+
+  .login-hero-titulo {
+    font-size: 34px;
+  }
+
+  .login-hero-sub {
+    font-size: 16px;
+    max-width: 380px;
+  }
+
+  .login-card-wrap {
+    flex: 1 1 54%;
+    align-items: center;
+    background: #f4f7fb;
+  }
+
+  .login-card {
+    background: #fff;
+    border-radius: 20px;
+    padding: 44px 40px;
+    box-shadow: 0 20px 60px rgba(20, 40, 80, 0.12);
+  }
+}
+
 /* ── Sucesso ──────────────────────────────────────────────── */
 .sucesso-tela {
   display: flex;

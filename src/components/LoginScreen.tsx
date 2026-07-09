@@ -40,31 +40,60 @@ export default function LoginScreen({ onLogin }: { onLogin: (sessao: SessaoOpera
   }
 
   return (
-    <div className="splash">
-      {/* eslint-disable-next-line @next/next/no-img-element */}
-      <img src="/icons/logo-watermark.png" alt="" aria-hidden="true" className="splash-watermark" />
-      <div className="splash-card">
-        <div className="splash-titulo">EcoBlaster</div>
-        <div className="splash-sub">Ecoelétrica Engenharia · Escavação</div>
-        <div style={{ width: "100%", textAlign: "left" }}>
-          <label className="splash-label">Digite seu CPF</label>
-          <input
-            className="splash-input"
-            type="tel"
-            inputMode="numeric"
-            maxLength={14}
-            placeholder="000.000.000-00"
-            value={cpfMascarado}
-            onChange={(e) => setCpfMascarado(mascararCPF(e.target.value))}
-            onKeyDown={(e) => {
-              if (e.key === "Enter") tentarLogin();
-            }}
-          />
+    <div className="login-tela">
+      <div className="login-hero">
+        {/* eslint-disable-next-line @next/next/no-img-element */}
+        <img src="/login-hero.jpg" alt="" aria-hidden="true" className="login-hero-img" />
+        <div className="login-hero-texto">
+          <div className="login-hero-titulo">
+            ENERGIA QUE
+            <br />
+            MOVE O FUTURO,
+            <br />
+            TECNOLOGIA QUE
+            <br />
+            TRANSFORMA.
+          </div>
+          <div className="login-hero-linha" />
+          <div className="login-hero-sub">Soluções completas em escavação e engenharia para grandes projetos.</div>
         </div>
-        {erro && <div className="splash-erro">CPF não autorizado.</div>}
-        <button className="splash-btn" onClick={tentarLogin}>
-          Entrar
-        </button>
+      </div>
+
+      <div className="login-card-wrap">
+        <div className="login-card">
+          {/* eslint-disable-next-line @next/next/no-img-element */}
+          <img src="/icons/logo-watermark.png" alt="Ecoelétrica Engenharia" className="login-logo" />
+          <div className="login-app-nome">EcoBlaster</div>
+          <div className="login-boas-vindas">Bem-vindo!</div>
+          <div className="login-instrucao">Digite seu CPF para acessar o sistema.</div>
+
+          <div style={{ width: "100%", textAlign: "left" }}>
+            <label className="splash-label">CPF</label>
+            <div className="login-input-wrap">
+              <input
+                className="splash-input login-input"
+                type="tel"
+                inputMode="numeric"
+                maxLength={14}
+                placeholder="000.000.000-00"
+                value={cpfMascarado}
+                onChange={(e) => setCpfMascarado(mascararCPF(e.target.value))}
+                onKeyDown={(e) => {
+                  if (e.key === "Enter") tentarLogin();
+                }}
+              />
+              <span className="login-input-icon">👤</span>
+            </div>
+          </div>
+
+          {erro && <div className="splash-erro">CPF não autorizado.</div>}
+
+          <button className="login-btn" onClick={tentarLogin}>
+            Entrar <span>→</span>
+          </button>
+
+          <div className="login-seguro">🛡️ Acesso seguro e protegido</div>
+        </div>
       </div>
     </div>
   );
