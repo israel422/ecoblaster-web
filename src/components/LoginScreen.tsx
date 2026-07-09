@@ -43,20 +43,11 @@ export default function LoginScreen({ onLogin }: { onLogin: (sessao: SessaoOpera
     <div className="login-tela">
       <div className="login-hero">
         {/* eslint-disable-next-line @next/next/no-img-element */}
-        <img src="/login-hero.jpg" alt="" aria-hidden="true" className="login-hero-img" />
-        <div className="login-hero-texto">
-          <div className="login-hero-titulo">
-            ENERGIA QUE
-            <br />
-            MOVE O FUTURO,
-            <br />
-            TECNOLOGIA QUE
-            <br />
-            TRANSFORMA.
-          </div>
-          <div className="login-hero-linha" />
-          <div className="login-hero-sub">Soluções completas em escavação e engenharia para grandes projetos.</div>
-        </div>
+        <img
+          src="/login-hero.jpg"
+          alt="Energia que move o futuro, tecnologia que transforma. Soluções completas em escavação e engenharia para grandes projetos."
+          className="login-hero-img"
+        />
       </div>
 
       <div className="login-card-wrap">
