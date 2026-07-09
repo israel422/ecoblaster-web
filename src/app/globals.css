@@ -503,29 +503,36 @@ textarea.campo-grande {
 
 /* ── Login (tela inicial do EcoBlaster) ──────────────────────── */
 .login-tela {
+  position: fixed;
+  inset: 0;
   display: flex;
-  flex-direction: column;
-  min-height: 100vh;
-  width: 100%;
+  align-items: center;
+  justify-content: center;
+  padding: 24px;
+  overflow: hidden;
+  background: #ffffff;
 }
 
 .login-hero {
-  flex-shrink: 0;
-  line-height: 0;
+  position: absolute;
+  inset: 0;
+  z-index: 0;
 }
 
 .login-hero-img {
-  display: block;
   width: 100%;
-  height: auto;
+  height: 100%;
+  object-fit: cover;
+  opacity: 0.22;
+  pointer-events: none;
 }
 
 .login-card-wrap {
-  flex: 1;
+  position: relative;
+  z-index: 1;
+  width: 100%;
   display: flex;
   justify-content: center;
-  padding: 28px 20px 40px;
-  background: #fff;
 }
 
 .login-card {
@@ -535,6 +542,10 @@ textarea.campo-grande {
   flex-direction: column;
   align-items: center;
   text-align: center;
+  background: #fff;
+  border-radius: 20px;
+  padding: 32px 26px;
+  box-shadow: 0 12px 40px rgba(20, 40, 80, 0.14);
 }
 
 .login-logo {
@@ -606,36 +617,6 @@ textarea.campo-grande {
   padding-top: 16px;
   border-top: 1px solid #eee;
   width: 100%;
-}
-
-@media (min-width: 860px) {
-  .login-tela {
-    flex-direction: row;
-  }
-
-  .login-hero {
-    flex: 1 1 46%;
-    overflow: hidden;
-  }
-
-  .login-hero-img {
-    height: 100%;
-    object-fit: cover;
-    object-position: top center;
-  }
-
-  .login-card-wrap {
-    flex: 1 1 54%;
-    align-items: center;
-    background: #f4f7fb;
-  }
-
-  .login-card {
-    background: #fff;
-    border-radius: 20px;
-    padding: 44px 40px;
-    box-shadow: 0 20px 60px rgba(20, 40, 80, 0.12);
-  }
 }
 
 /* ── Sucesso ──────────────────────────────────────────────── */
