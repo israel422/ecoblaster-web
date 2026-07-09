@@ -14,9 +14,17 @@ interface Props {
   onEditar: (turno: TurnoRegistro) => void;
   onNovoRegistro: () => void;
   onVazio: () => void;
+  onAbrirPainel?: () => void;
 }
 
-export default function TurnosAbertosModal({ sessao, onContinuarFotos, onEditar, onNovoRegistro, onVazio }: Props) {
+export default function TurnosAbertosModal({
+  sessao,
+  onContinuarFotos,
+  onEditar,
+  onNovoRegistro,
+  onVazio,
+  onAbrirPainel,
+}: Props) {
   const [turnos, setTurnos] = useState<TurnoExibicao[] | null>(null);
   const [sincronizando, setSincronizando] = useState<string | null>(null);
   const [progressoPorChave, setProgressoPorChave] = useState<Record<string, { feitas: number; total: number }>>({});
@@ -154,13 +162,24 @@ export default function TurnosAbertosModal({ sessao, onContinuarFotos, onEditar,
         <button type="button" className="btn-avancar" onClick={onNovoRegistro} style={{ width: "100%", marginTop: 6 }}>
           + Novo Registro
         </button>
-        {sessao.admin && (
-          <a
-            href="/painel"
-            style={{ display: "block", textAlign: "center", marginTop: 12, fontSize: 13, color: "#1a73e8" }}
+        {sessao.admin && onAbrirPainel && (
+          <button
+            type="button"
+            onClick={onAbrirPainel}
+            style={{
+              display: "block",
+              width: "100%",
+              textAlign: "center",
+              marginTop: 12,
+              fontSize: 13,
+              color: "#1a73e8",
+              background: "none",
+              border: "none",
+              cursor: "pointer",
+            }}
           >
-            📊 Ver Painel de Registros
-          </a>
+            ☰ Voltar ao Menu
+          </button>
         )}
       </div>
 

@@ -6,6 +6,9 @@ import WizardShell from "@/components/wizard/WizardShell";
 import TurnosAbertosModal from "@/components/turnos/TurnosAbertosModal";
 import OfflineBanner from "@/components/OfflineBanner";
 import AlertModal from "@/components/ui/AlertModal";
+import AdminMenu from "@/components/AdminMenu";
+import PainelFotos from "@/components/painel/PainelFotos";
+import PainelIndicadores from "@/components/painel/PainelIndicadores";
 import type { SessaoOperador } from "@/types";
 import type { TurnoRegistro } from "@/lib/idb/turnosDb";
 import { turnoCompleto } from "@/lib/idb/turnosDb";
@@ -13,6 +16,7 @@ import { obterTurnosParaExibir } from "@/lib/turnos/obterTurnosParaExibir";
 
 export default function Home() {
   const [sessao, setSessao] = useState<SessaoOperador | null>(null);
+  const [telaAdmin, setTelaAdmin] = useState<"menu" | "fotos" | "indicadores" | null>(null);
   const [mostrarTurnos, setMostrarTurnos] = useState(false);
   const [turnoInicial, setTurnoInicial] = useState<TurnoRegistro | null>(null);
   const [passoInicial, setPassoInicial] = useState(1);
@@ -21,6 +25,15 @@ export default function Home() {
 
   function handleLogin(s: SessaoOperador) {
     setSessao(s);
+    if (s.admin) {
+      setTelaAdmin("menu");
+    } else {
+      setMostrarTurnos(true);
+    }
+  }
+
+  function irNovoRegistro() {
+    setTelaAdmin(null);
     setMostrarTurnos(true);
   }
 
@@ -63,18 +76,42 @@ export default function Home() {
     <>
       <OfflineBanner />
       {!sessao && <LoginScreen onLogin={handleLogin} />}
-      {sessao && mostrarTurnos && (
+
+      {sessao && sessao.admin && telaAdmin === "menu" && (
+        <AdminMenu
+          nome={sessao.nome}
+          onNovoRegistro={irNovoRegistro}
+          onPainelFotos={() => setTelaAdmin("fotos")}
+          onPainelIndicadores={() => setTelaAdmin("indicadores")}
+        />
+      )}
+      {sessao && sessao.admin && telaAdmin === "fotos" && (
+        <PainelFotos cpfAdmin={sessao.cpf} onVoltar={() => setTelaAdmin("menu")} />
+      )}
+      {sessao && sessao.admin && telaAdmin === "indicadores" && (
+        <PainelIndicadores cpfAdmin={sessao.cpf} onVoltar={() => setTelaAdmin("menu")} />
+      )}
+
+      {sessao && telaAdmin === null && mostrarTurnos && (
         <TurnosAbertosModal
           sessao={sessao}
           onContinuarFotos={continuarFotos}
           onEditar={editar}
           onNovoRegistro={novoRegistro}
           onVazio={() => setMostrarTurnos(false)}
+          onAbrirPainel={sessao.admin ? () => setTelaAdmin("menu") : undefined}
         />
       )}
-      {sessao && !mostrarTurnos && (
-        <WizardShell key={wizardKey} sessao={sessao} turnoInicial={turnoInicial} passoInicial={passoInicial} />
+      {sessao && telaAdmin === null && !mostrarTurnos && (
+        <WizardShell
+          key={wizardKey}
+          sessao={sessao}
+          turnoInicial={turnoInicial}
+          passoInicial={passoInicial}
+          onAbrirPainel={sessao.admin ? () => setTelaAdmin("menu") : undefined}
+        />
       )}
+
       {avisoBloqueio && (
         <AlertModal
           titulo="Fotos pendentes"

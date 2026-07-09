@@ -26,9 +26,10 @@ interface Props {
   sessao: SessaoOperador;
   turnoInicial?: TurnoRegistro | null;
   passoInicial?: number;
+  onAbrirPainel?: () => void;
 }
 
-export default function WizardShell({ sessao, turnoInicial, passoInicial }: Props) {
+export default function WizardShell({ sessao, turnoInicial, passoInicial, onAbrirPainel }: Props) {
   const [passo, setPasso] = useState(passoInicial ?? 1);
   const [dados, setDados] = useState<DadosRegistro>(
     turnoInicial
@@ -182,13 +183,24 @@ export default function WizardShell({ sessao, turnoInicial, passoInicial }: Prop
     <div className="tela">
       <Progresso passo={passo} total={TOTAL_PASSOS} />
 
-      {sessao.admin && (
-        <a
-          href="/painel"
-          style={{ position: "fixed", top: 8, right: 12, fontSize: 12, color: "#1a73e8", zIndex: 50 }}
+      {sessao.admin && onAbrirPainel && (
+        <button
+          type="button"
+          onClick={onAbrirPainel}
+          style={{
+            position: "fixed",
+            top: 8,
+            right: 12,
+            fontSize: 12,
+            color: "#1a73e8",
+            zIndex: 50,
+            background: "none",
+            border: "none",
+            cursor: "pointer",
+          }}
         >
-          📊 Painel
-        </a>
+          ☰ Menu
+        </button>
       )}
 
       {passo === 1 && (
