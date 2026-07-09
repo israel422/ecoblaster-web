@@ -70,6 +70,24 @@ export default function PainelPage() {
     carregar(digits, filtros);
   }
 
+  async function baixarFoto(url: string, nomeArquivo: string) {
+    const resp = await fetch(url);
+    const blob = await resp.blob();
+    const objectUrl = URL.createObjectURL(blob);
+    const a = document.createElement("a");
+    a.href = objectUrl;
+    a.download = nomeArquivo;
+    a.click();
+    URL.revokeObjectURL(objectUrl);
+  }
+
+  async function baixarTodasFotos(registro: RegistroLinha) {
+    for (const f of registro.fotos) {
+      const nome = `obra${registro.obra}_cava${f.cava}_${f.label.replace(/[^a-zA-Z0-9]+/g, "_")}.jpg`;
+      await baixarFoto(f.url, nome);
+    }
+  }
+
   function exportarCSV() {
     const linhas = [
       ["Data", "Obra", "Tipo de Cava", "Total de Cavas", "Operador", "CPF", "Observacao", "Fotos"].join(";"),
@@ -243,19 +261,39 @@ export default function PainelPage() {
             style={{ background: "#fff", borderRadius: 16, padding: 20, maxWidth: 700, margin: "20px auto", width: "100%" }}
             onClick={(e) => e.stopPropagation()}
           >
-            <h3 style={{ color: "#1B4FA2" }}>
-              Obra {registroAberto.obra} — {registroAberto.tipoCava} — {registroAberto.operador}
-            </h3>
+            <div style={{ display: "flex", justifyContent: "space-between", alignItems: "start", gap: 12 }}>
+              <h3 style={{ color: "#1B4FA2" }}>
+                Obra {registroAberto.obra} — {registroAberto.tipoCava} — {registroAberto.operador}
+              </h3>
+              <button
+                className="btn-voltar"
+                style={{ flex: "0 0 auto", padding: "10px 16px", whiteSpace: "nowrap" }}
+                onClick={() => baixarTodasFotos(registroAberto)}
+              >
+                ⬇️ Baixar todas
+              </button>
+            </div>
             {registroAberto.observacao && <p style={{ color: "#666" }}>Obs: {registroAberto.observacao}</p>}
             <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fill, minmax(140px,1fr))", gap: 10, marginTop: 12 }}>
               {registroAberto.fotos.map((f, i) => (
-                <a key={i} href={f.url} target="_blank" rel="noopener noreferrer">
-                  {/* eslint-disable-next-line @next/next/no-img-element */}
-                  <img src={f.url} alt={f.label} style={{ width: "100%", borderRadius: 8, objectFit: "cover", aspectRatio: "1" }} />
+                <div key={i}>
+                  <a href={f.url} target="_blank" rel="noopener noreferrer">
+                    {/* eslint-disable-next-line @next/next/no-img-element */}
+                    <img src={f.url} alt={f.label} style={{ width: "100%", borderRadius: 8, objectFit: "cover", aspectRatio: "1" }} />
+                  </a>
                   <div style={{ fontSize: 11, color: "#888", marginTop: 4 }}>
                     Cava {f.cava}: {f.label}
                   </div>
-                </a>
+                  <button
+                    className="btn-voltar"
+                    style={{ marginTop: 4, padding: "6px 10px", fontSize: 12, width: "100%" }}
+                    onClick={() =>
+                      baixarFoto(f.url, `obra${registroAberto.obra}_cava${f.cava}_${f.label.replace(/[^a-zA-Z0-9]+/g, "_")}.jpg`)
+                    }
+                  >
+                    ⬇️ Baixar
+                  </button>
+                </div>
               ))}
             </div>
             <button className="btn-voltar" style={{ marginTop: 16 }} onClick={() => setRegistroAberto(null)}>
