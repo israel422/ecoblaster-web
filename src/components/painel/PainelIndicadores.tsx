@@ -32,10 +32,45 @@ function agregarPor(lista: RegistroLinha[], campo: "operador" | "tipoCava" | "ob
   return Array.from(mapa.values()).sort((a, b) => b.cavas - a.cavas);
 }
 
+const CORES_BARRA = ["#1a73e8", "#1e8e3e", "#e8710a", "#9334e6", "#d93025", "#12939a", "#e52592", "#795548"];
+
+function GraficoBarras({ linhas }: { linhas: LinhaAgregada[] }) {
+  const max = Math.max(1, ...linhas.map((l) => l.cavas));
+  return (
+    <div style={{ display: "flex", flexDirection: "column", gap: 8, marginBottom: 16 }}>
+      {linhas.map((l, i) => (
+        <div key={l.chave} style={{ display: "flex", alignItems: "center", gap: 8 }}>
+          <div style={{ width: 140, fontSize: 12, color: "#444", textAlign: "right", flexShrink: 0, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>
+            {l.chave}
+          </div>
+          <div style={{ flex: 1, background: "#f0f4f8", borderRadius: 6, overflow: "hidden" }}>
+            <div
+              style={{
+                width: `${Math.max(4, (l.cavas / max) * 100)}%`,
+                background: CORES_BARRA[i % CORES_BARRA.length],
+                color: "#fff",
+                fontSize: 12,
+                fontWeight: 700,
+                padding: "6px 8px",
+                borderRadius: 6,
+                whiteSpace: "nowrap",
+              }}
+            >
+              {l.cavas}
+            </div>
+          </div>
+        </div>
+      ))}
+      {linhas.length === 0 && <p style={{ color: "#888" }}>Sem dados no período.</p>}
+    </div>
+  );
+}
+
 function TabelaAgregada({ titulo, colunaChave, linhas }: { titulo: string; colunaChave: string; linhas: LinhaAgregada[] }) {
   return (
     <div style={{ marginBottom: 28 }}>
       <h3 style={{ color: "#1B4FA2", fontSize: 17, marginBottom: 8 }}>{titulo}</h3>
+      <GraficoBarras linhas={linhas} />
       <div style={{ overflowX: "auto" }}>
         <table style={{ width: "100%", borderCollapse: "collapse" }}>
           <thead>
@@ -57,7 +92,6 @@ function TabelaAgregada({ titulo, colunaChave, linhas }: { titulo: string; colun
             ))}
           </tbody>
         </table>
-        {linhas.length === 0 && <p style={{ color: "#888", marginTop: 12 }}>Sem dados no período.</p>}
       </div>
     </div>
   );
