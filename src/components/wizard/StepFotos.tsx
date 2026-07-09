@@ -3,10 +3,8 @@
 import { useRef, useState } from "react";
 import type { FotoItem } from "@/types";
 import { stampPhoto, formatarDataHora } from "@/lib/camera/stampPhoto";
-import { pareceForaDoEsperado } from "@/lib/camera/validarFotoSolo";
 import PhotoPreviewModal from "@/components/camera/PhotoPreviewModal";
 import ReferenciaFotoOverlay from "@/components/camera/ReferenciaFotoOverlay";
-import FotoRejeitadaModal from "@/components/camera/FotoRejeitadaModal";
 import ConfirmModal from "@/components/ui/ConfirmModal";
 
 const LABEL_ANTES_DO_SOLO = "Antes de explorar o solo";
@@ -40,7 +38,6 @@ export default function StepFotos({
   const [previewBlob, setPreviewBlob] = useState<Blob | null>(null);
   const [idxParaApagar, setIdxParaApagar] = useState<number | null>(null);
   const [referenciaParaIdx, setReferenciaParaIdx] = useState<number | null>(null);
-  const [fotoRejeitada, setFotoRejeitada] = useState<File | null>(null);
 
   const feitas = fotos.filter((f) => f.blob).length;
 
@@ -71,11 +68,6 @@ export default function StepFotos({
     const idx = fotoIndexRef.current;
     const item = fotos[idx];
     if (!item) return;
-
-    if (item.label === LABEL_ANTES_DO_SOLO && (await pareceForaDoEsperado(file))) {
-      setFotoRejeitada(file);
-      return;
-    }
 
     const gps = gpsRef.current;
     const gpsStr = gps ? `GPS: ${gps.lat.toFixed(5)}, ${gps.lon.toFixed(5)}` : "GPS: indisponível";
@@ -241,16 +233,6 @@ export default function StepFotos({
             const idx = referenciaParaIdx;
             setReferenciaParaIdx(null);
             tirarFoto(idx);
-          }}
-        />
-      )}
-
-      {fotoRejeitada && (
-        <FotoRejeitadaModal
-          file={fotoRejeitada}
-          onTirarNovamente={() => {
-            setFotoRejeitada(null);
-            tirarFoto(fotoIndexRef.current);
           }}
         />
       )}
