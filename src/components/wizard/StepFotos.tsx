@@ -3,8 +3,13 @@
 import { useRef, useState } from "react";
 import type { FotoItem } from "@/types";
 import { stampPhoto, formatarDataHora } from "@/lib/camera/stampPhoto";
+import { pareceForaDoEsperado } from "@/lib/camera/validarFotoSolo";
 import PhotoPreviewModal from "@/components/camera/PhotoPreviewModal";
+import ReferenciaFotoOverlay from "@/components/camera/ReferenciaFotoOverlay";
+import FotoRejeitadaModal from "@/components/camera/FotoRejeitadaModal";
 import ConfirmModal from "@/components/ui/ConfirmModal";
+
+const LABEL_ANTES_DO_SOLO = "Antes de explorar o solo";
 
 interface Props {
   obra: string;
@@ -34,6 +39,8 @@ export default function StepFotos({
   const gpsRef = useRef<{ lat: number; lon: number } | null>(null);
   const [previewBlob, setPreviewBlob] = useState<Blob | null>(null);
   const [idxParaApagar, setIdxParaApagar] = useState<number | null>(null);
+  const [referenciaParaIdx, setReferenciaParaIdx] = useState<number | null>(null);
+  const [fotoRejeitada, setFotoRejeitada] = useState<File | null>(null);
 
   const feitas = fotos.filter((f) => f.blob).length;
 
@@ -64,6 +71,11 @@ export default function StepFotos({
     const idx = fotoIndexRef.current;
     const item = fotos[idx];
     if (!item) return;
+
+    if (item.label === LABEL_ANTES_DO_SOLO && (await pareceForaDoEsperado(file))) {
+      setFotoRejeitada(file);
+      return;
+    }
 
     const gps = gpsRef.current;
     const gpsStr = gps ? `GPS: ${gps.lat.toFixed(5)}, ${gps.lon.toFixed(5)}` : "GPS: indisponível";
@@ -151,7 +163,9 @@ export default function StepFotos({
                   cursor: item.blob ? "default" : "pointer",
                 }}
                 onClick={() => {
-                  if (!item.blob) tirarFoto(idx);
+                  if (item.blob) return;
+                  if (item.label === LABEL_ANTES_DO_SOLO) setReferenciaParaIdx(idx);
+                  else tirarFoto(idx);
                 }}
               >
                 <div
@@ -218,6 +232,26 @@ export default function StepFotos({
           mensagem="Apagar esta foto? Você poderá tirá-la novamente."
           onConfirmar={apagarFotoConfirmado}
           onCancelar={() => setIdxParaApagar(null)}
+        />
+      )}
+
+      {referenciaParaIdx !== null && (
+        <ReferenciaFotoOverlay
+          onProsseguir={() => {
+            const idx = referenciaParaIdx;
+            setReferenciaParaIdx(null);
+            tirarFoto(idx);
+          }}
+        />
+      )}
+
+      {fotoRejeitada && (
+        <FotoRejeitadaModal
+          file={fotoRejeitada}
+          onTirarNovamente={() => {
+            setFotoRejeitada(null);
+            tirarFoto(fotoIndexRef.current);
+          }}
         />
       )}
     </>
