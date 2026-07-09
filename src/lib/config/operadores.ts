@@ -23,6 +23,7 @@ export const OPERADORES: Operador[] = [
   { cpf: "70239725441", nome: "ISRAEL IURY JACINTO DE SOUZA", categoria: null, admin: true },
   { cpf: "03815690552", nome: "JOCECINO JOSE DOS SANTOS FILHO", categoria: null, admin: true },
   { cpf: "10696389436", nome: "CLEITISVAL XAVIER COELHO", categoria: null, admin: true },
+  { cpf: "05826728566", nome: "FRANCISCO MIRANDA", categoria: null, admin: true },
 ];
 
 export function buscarOperador(cpf: string): Operador | undefined {
