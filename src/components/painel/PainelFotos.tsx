@@ -38,6 +38,19 @@ export default function PainelFotos({ cpfAdmin, onVoltar }: { cpfAdmin: string; 
   const [carregando, setCarregando] = useState(false);
   const [filtros, setFiltros] = useState<Filtros>(FILTROS_VAZIOS);
   const [registroAberto, setRegistroAberto] = useState<RegistroLinha | null>(null);
+  const [fotoAbertaIdx, setFotoAbertaIdx] = useState<number | null>(null);
+
+  useEffect(() => {
+    if (fotoAbertaIdx === null || !registroAberto) return;
+    const total = registroAberto.fotos.length;
+    function onKey(e: KeyboardEvent) {
+      if (e.key === "Escape") setFotoAbertaIdx(null);
+      if (e.key === "ArrowLeft") setFotoAbertaIdx((i) => (i === null ? i : (i - 1 + total) % total));
+      if (e.key === "ArrowRight") setFotoAbertaIdx((i) => (i === null ? i : (i + 1) % total));
+    }
+    window.addEventListener("keydown", onKey);
+    return () => window.removeEventListener("keydown", onKey);
+  }, [fotoAbertaIdx, registroAberto]);
 
   async function carregar(f: Filtros) {
     setCarregando(true);
@@ -193,7 +206,10 @@ export default function PainelFotos({ cpfAdmin, onVoltar }: { cpfAdmin: string; 
               <tr
                 key={r.id}
                 style={{ borderBottom: "1px solid #eee", cursor: "pointer" }}
-                onClick={() => setRegistroAberto(r)}
+                onClick={() => {
+                  setRegistroAberto(r);
+                  setFotoAbertaIdx(null);
+                }}
               >
                 <td style={{ padding: 8 }}>{r.data.slice(0, 10).split("-").reverse().join("/")}</td>
                 <td style={{ padding: 8 }}>{r.obra}</td>
@@ -244,10 +260,14 @@ export default function PainelFotos({ cpfAdmin, onVoltar }: { cpfAdmin: string; 
             <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fill, minmax(140px,1fr))", gap: 10, marginTop: 12 }}>
               {registroAberto.fotos.map((f, i) => (
                 <div key={i}>
-                  <a href={f.url} target="_blank" rel="noopener noreferrer">
+                  <button
+                    type="button"
+                    onClick={() => setFotoAbertaIdx(i)}
+                    style={{ display: "block", width: "100%", padding: 0, border: "none", background: "none", cursor: "pointer" }}
+                  >
                     {/* eslint-disable-next-line @next/next/no-img-element */}
                     <img src={f.url} alt={f.label} style={{ width: "100%", borderRadius: 8, objectFit: "cover", aspectRatio: "1" }} />
-                  </a>
+                  </button>
                   <div style={{ fontSize: 11, color: "#888", marginTop: 4 }}>
                     Cava {f.cava}: {f.label}
                   </div>
@@ -265,6 +285,122 @@ export default function PainelFotos({ cpfAdmin, onVoltar }: { cpfAdmin: string; 
             </div>
             <button className="btn-voltar" style={{ marginTop: 16 }} onClick={() => setRegistroAberto(null)}>
               Fechar
+            </button>
+          </div>
+        </div>
+      )}
+
+      {fotoAbertaIdx !== null && registroAberto && (
+        <div
+          style={{
+            position: "fixed",
+            inset: 0,
+            background: "rgba(0,0,0,0.94)",
+            zIndex: 500,
+            display: "flex",
+            alignItems: "center",
+            justifyContent: "center",
+            padding: 20,
+          }}
+          onClick={() => setFotoAbertaIdx(null)}
+        >
+          <button
+            type="button"
+            onClick={(e) => {
+              e.stopPropagation();
+              setFotoAbertaIdx(null);
+            }}
+            style={{
+              position: "absolute",
+              top: 16,
+              right: 16,
+              background: "rgba(255,255,255,0.15)",
+              color: "#fff",
+              border: "none",
+              borderRadius: "50%",
+              width: 40,
+              height: 40,
+              fontSize: 18,
+              cursor: "pointer",
+            }}
+          >
+            ✕
+          </button>
+
+          {registroAberto.fotos.length > 1 && (
+            <>
+              <button
+                type="button"
+                onClick={(e) => {
+                  e.stopPropagation();
+                  setFotoAbertaIdx((i) => (i === null ? i : (i - 1 + registroAberto.fotos.length) % registroAberto.fotos.length));
+                }}
+                style={{
+                  position: "absolute",
+                  left: 12,
+                  top: "50%",
+                  transform: "translateY(-50%)",
+                  background: "rgba(255,255,255,0.15)",
+                  color: "#fff",
+                  border: "none",
+                  borderRadius: "50%",
+                  width: 48,
+                  height: 48,
+                  fontSize: 24,
+                  cursor: "pointer",
+                }}
+              >
+                ‹
+              </button>
+              <button
+                type="button"
+                onClick={(e) => {
+                  e.stopPropagation();
+                  setFotoAbertaIdx((i) => (i === null ? i : (i + 1) % registroAberto.fotos.length));
+                }}
+                style={{
+                  position: "absolute",
+                  right: 12,
+                  top: "50%",
+                  transform: "translateY(-50%)",
+                  background: "rgba(255,255,255,0.15)",
+                  color: "#fff",
+                  border: "none",
+                  borderRadius: "50%",
+                  width: 48,
+                  height: 48,
+                  fontSize: 24,
+                  cursor: "pointer",
+                }}
+              >
+                ›
+              </button>
+            </>
+          )}
+
+          <div
+            onClick={(e) => e.stopPropagation()}
+            style={{ display: "flex", flexDirection: "column", alignItems: "center", gap: 14, maxWidth: "100%" }}
+          >
+            {/* eslint-disable-next-line @next/next/no-img-element */}
+            <img
+              src={registroAberto.fotos[fotoAbertaIdx].url}
+              alt={registroAberto.fotos[fotoAbertaIdx].label}
+              style={{ maxWidth: "100%", maxHeight: "68vh", borderRadius: 10, boxShadow: "0 8px 30px rgba(0,0,0,0.5)" }}
+            />
+            <div style={{ color: "#fff", fontSize: 14, textAlign: "center" }}>
+              Cava {registroAberto.fotos[fotoAbertaIdx].cava}: {registroAberto.fotos[fotoAbertaIdx].label} ·{" "}
+              {fotoAbertaIdx + 1}/{registroAberto.fotos.length}
+            </div>
+            <button
+              className="btn-voltar"
+              style={{ padding: "10px 20px" }}
+              onClick={() => {
+                const f = registroAberto.fotos[fotoAbertaIdx];
+                baixarFoto(f.url, `obra${registroAberto.obra}_cava${f.cava}_${f.label.replace(/[^a-zA-Z0-9]+/g, "_")}.jpg`);
+              }}
+            >
+              ⬇️ Baixar esta foto
             </button>
           </div>
         </div>
