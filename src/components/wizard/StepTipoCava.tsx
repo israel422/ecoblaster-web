@@ -5,12 +5,10 @@ interface Props {
   categoria: Categoria | null;
   valor: string;
   onSelecionar: (tipo: string) => void;
-  erro: boolean;
   onVoltar: () => void;
-  onAvancar: () => void;
 }
 
-export default function StepTipoCava({ categoria, valor, onSelecionar, erro, onVoltar, onAvancar }: Props) {
+export default function StepTipoCava({ categoria, valor, onSelecionar, onVoltar }: Props) {
   const permitidos = tiposPermitidos(categoria);
   const opcoes = TIPOS_CAVA.filter((t) => permitidos.includes(t.id));
 
@@ -32,13 +30,9 @@ export default function StepTipoCava({ categoria, valor, onSelecionar, erro, onV
           </button>
         ))}
       </div>
-      {erro && <div className="erro-inline">Selecione o tipo de cava.</div>}
       <div className="rodape">
         <button className="btn-voltar" onClick={onVoltar}>
           ← Voltar
-        </button>
-        <button className="btn-avancar" onClick={onAvancar}>
-          Avançar →
         </button>
       </div>
     </>

@@ -56,10 +56,9 @@ export default function WizardShell({ sessao, turnoInicial, passoInicial, onAbri
   const tipoGeradoRef = useRef<string | null>(turnoInicial ? turnoInicial.tipoCava : null);
 
   const [erroObra, setErroObra] = useState(false);
-  const [erroTipo, setErroTipo] = useState(false);
   const [erroFotos, setErroFotos] = useState(false);
 
-  async function persistirTurno(fotosAtuais: FotoItem[]) {
+  async function persistirTurno(fotosAtuais: FotoItem[], tipoCavaAtual?: string) {
     const eraNovo = !turnoIdRef.current;
     const turno: TurnoRegistro = {
       id: turnoIdRef.current,
@@ -68,7 +67,7 @@ export default function WizardShell({ sessao, turnoInicial, passoInicial, onAbri
       operador: sessao.nome,
       obra: dados.obra,
       data: dados.data,
-      tipoCava: dados.tipoCava,
+      tipoCava: tipoCavaAtual ?? dados.tipoCava,
       totalCavas: String(contarCavas(fotosAtuais)),
       observacao: dados.observacao,
       fotos: fotosAtuais,
@@ -93,20 +92,20 @@ export default function WizardShell({ sessao, turnoInicial, passoInicial, onAbri
       setTimeout(() => setErroObra(false), 2500);
       return;
     }
-    if (n === 5 && !dados.tipoCava) {
-      setErroTipo(true);
-      setTimeout(() => setErroTipo(false), 2500);
-      return;
-    }
-
-    if (n === 5 && (fotos.length === 0 || tipoGeradoRef.current !== dados.tipoCava)) {
-      const fotosDaCava1 = montarFotosParaCava(dados.tipoCava, 1);
-      tipoGeradoRef.current = dados.tipoCava;
-      setFotos(fotosDaCava1);
-      persistirTurno(fotosDaCava1);
-    }
-
     setPasso(n);
+  }
+
+  function selecionarTipoEAvancar(tipoCava: string) {
+    setDados((d) => ({ ...d, tipoCava }));
+
+    if (fotos.length === 0 || tipoGeradoRef.current !== tipoCava) {
+      const fotosDaCava1 = montarFotosParaCava(tipoCava, 1);
+      tipoGeradoRef.current = tipoCava;
+      setFotos(fotosDaCava1);
+      persistirTurno(fotosDaCava1, tipoCava);
+    }
+
+    setPasso(5);
   }
 
   function avancarDeFotos() {
@@ -231,10 +230,8 @@ export default function WizardShell({ sessao, turnoInicial, passoInicial, onAbri
         <StepTipoCava
           categoria={sessao.categoria}
           valor={dados.tipoCava}
-          onSelecionar={(tipoCava) => setDados((d) => ({ ...d, tipoCava }))}
-          erro={erroTipo}
+          onSelecionar={selecionarTipoEAvancar}
           onVoltar={() => irPara(3)}
-          onAvancar={() => irPara(5)}
         />
       )}
 
