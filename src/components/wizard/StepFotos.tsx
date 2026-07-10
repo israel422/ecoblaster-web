@@ -5,9 +5,8 @@ import type { FotoItem } from "@/types";
 import { stampPhoto, formatarDataHora } from "@/lib/camera/stampPhoto";
 import PhotoPreviewModal from "@/components/camera/PhotoPreviewModal";
 import ReferenciaFotoOverlay from "@/components/camera/ReferenciaFotoOverlay";
+import { REFERENCIAS_FOTO } from "@/lib/config/referenciasFoto";
 import ConfirmModal from "@/components/ui/ConfirmModal";
-
-const LABEL_ANTES_DO_SOLO = "Antes de explorar o solo";
 
 interface Props {
   obra: string;
@@ -154,7 +153,7 @@ export default function StepFotos({
                 }}
                 onClick={() => {
                   if (item.blob) return;
-                  if (item.label === LABEL_ANTES_DO_SOLO) setReferenciaParaIdx(idx);
+                  if (REFERENCIAS_FOTO[item.label]) setReferenciaParaIdx(idx);
                   else tirarFoto(idx);
                 }}
               >
@@ -225,8 +224,9 @@ export default function StepFotos({
         />
       )}
 
-      {referenciaParaIdx !== null && (
+      {referenciaParaIdx !== null && REFERENCIAS_FOTO[fotos[referenciaParaIdx].label] && (
         <ReferenciaFotoOverlay
+          referencia={REFERENCIAS_FOTO[fotos[referenciaParaIdx].label]}
           onProsseguir={() => {
             const idx = referenciaParaIdx;
             setReferenciaParaIdx(null);
