@@ -2,6 +2,7 @@
 
 import { useEffect, useState } from "react";
 import { TIPOS_CAVA } from "@/lib/config/tiposCava";
+import ConfirmModal from "@/components/ui/ConfirmModal";
 
 interface FotoRegistro {
   cava: number;
@@ -39,6 +40,8 @@ export default function PainelFotos({ cpfAdmin, onVoltar }: { cpfAdmin: string; 
   const [filtros, setFiltros] = useState<Filtros>(FILTROS_VAZIOS);
   const [registroAberto, setRegistroAberto] = useState<RegistroLinha | null>(null);
   const [fotoAbertaIdx, setFotoAbertaIdx] = useState<number | null>(null);
+  const [registroParaApagar, setRegistroParaApagar] = useState<RegistroLinha | null>(null);
+  const [apagando, setApagando] = useState(false);
 
   useEffect(() => {
     if (fotoAbertaIdx === null || !registroAberto) return;
@@ -89,6 +92,21 @@ export default function PainelFotos({ cpfAdmin, onVoltar }: { cpfAdmin: string; 
       const nome = `obra${registro.obra}_cava${f.cava}_${f.label.replace(/[^a-zA-Z0-9]+/g, "_")}.jpg`;
       await baixarFoto(f.url, nome);
     }
+  }
+
+  async function apagarRegistroConfirmado() {
+    if (!registroParaApagar) return;
+    setApagando(true);
+    const resp = await fetch(`/api/registros/${registroParaApagar.id}?cpf=${cpfAdmin}`, { method: "DELETE" });
+    if (resp.ok) {
+      setRegistrosLista((lista) => lista.filter((r) => r.id !== registroParaApagar.id));
+      if (registroAberto?.id === registroParaApagar.id) {
+        setRegistroAberto(null);
+        setFotoAbertaIdx(null);
+      }
+    }
+    setApagando(false);
+    setRegistroParaApagar(null);
   }
 
   function exportarCSV() {
@@ -199,6 +217,7 @@ export default function PainelFotos({ cpfAdmin, onVoltar }: { cpfAdmin: string; 
               <th style={{ padding: 8 }}>Cavas</th>
               <th style={{ padding: 8 }}>Operador</th>
               <th style={{ padding: 8 }}>Fotos</th>
+              <th style={{ padding: 8 }}></th>
             </tr>
           </thead>
           <tbody>
@@ -217,6 +236,18 @@ export default function PainelFotos({ cpfAdmin, onVoltar }: { cpfAdmin: string; 
                 <td style={{ padding: 8 }}>{r.totalCavas}</td>
                 <td style={{ padding: 8 }}>{r.operador}</td>
                 <td style={{ padding: 8 }}>{r.fotos.length} 📷</td>
+                <td style={{ padding: 8 }}>
+                  <button
+                    type="button"
+                    className="foto-del"
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      setRegistroParaApagar(r);
+                    }}
+                  >
+                    🗑️
+                  </button>
+                </td>
               </tr>
             ))}
           </tbody>
@@ -248,13 +279,22 @@ export default function PainelFotos({ cpfAdmin, onVoltar }: { cpfAdmin: string; 
               <h3 style={{ color: "#1B4FA2" }}>
                 Obra {registroAberto.obra} — {registroAberto.tipoCava} — {registroAberto.operador}
               </h3>
-              <button
-                className="btn-voltar"
-                style={{ flex: "0 0 auto", padding: "10px 16px", whiteSpace: "nowrap" }}
-                onClick={() => baixarTodasFotos(registroAberto)}
-              >
-                ⬇️ Baixar todas
-              </button>
+              <div style={{ display: "flex", gap: 8, flex: "0 0 auto" }}>
+                <button
+                  className="btn-voltar"
+                  style={{ padding: "10px 16px", whiteSpace: "nowrap" }}
+                  onClick={() => baixarTodasFotos(registroAberto)}
+                >
+                  ⬇️ Baixar todas
+                </button>
+                <button
+                  className="foto-del"
+                  style={{ width: "auto", padding: "10px 16px", whiteSpace: "nowrap" }}
+                  onClick={() => setRegistroParaApagar(registroAberto)}
+                >
+                  🗑️ Apagar
+                </button>
+              </div>
             </div>
             {registroAberto.observacao && <p style={{ color: "#666" }}>Obs: {registroAberto.observacao}</p>}
             <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fill, minmax(140px,1fr))", gap: 10, marginTop: 12 }}>
@@ -404,6 +444,16 @@ export default function PainelFotos({ cpfAdmin, onVoltar }: { cpfAdmin: string; 
             </button>
           </div>
         </div>
+      )}
+
+      {registroParaApagar && (
+        <ConfirmModal
+          titulo="Apagar registro"
+          mensagem={`Apagar o registro da obra ${registroParaApagar.obra} (${registroParaApagar.tipoCava}, ${registroParaApagar.fotos.length} foto(s))? Essa ação não pode ser desfeita.`}
+          textoConfirmar={apagando ? "Apagando..." : "Sim, apagar"}
+          onConfirmar={apagarRegistroConfirmado}
+          onCancelar={() => setRegistroParaApagar(null)}
+        />
       )}
     </div>
   );
