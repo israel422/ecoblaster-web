@@ -31,9 +31,10 @@ interface Props {
   turnoInicial?: TurnoRegistro | null;
   passoInicial?: number;
   onAbrirPainel?: () => void;
+  onVoltarInicio?: () => void;
 }
 
-export default function WizardShell({ sessao, turnoInicial, passoInicial, onAbrirPainel }: Props) {
+export default function WizardShell({ sessao, turnoInicial, passoInicial, onAbrirPainel, onVoltarInicio }: Props) {
   const [passo, setPasso] = useState(passoInicial ?? 1);
   const [dados, setDados] = useState<DadosRegistro>(
     turnoInicial
@@ -211,6 +212,7 @@ export default function WizardShell({ sessao, turnoInicial, passoInicial, onAbri
           valor={dados.obra}
           onSelecionar={(obra) => setDados((d) => ({ ...d, obra }))}
           erro={erroObra}
+          onVoltar={onVoltarInicio}
           onAvancar={() => irPara(2)}
         />
       )}

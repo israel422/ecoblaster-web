@@ -7,10 +7,11 @@ interface Props {
   valor: string;
   onSelecionar: (obra: string) => void;
   erro: boolean;
+  onVoltar?: () => void;
   onAvancar: () => void;
 }
 
-export default function StepObra({ valor, onSelecionar, erro, onAvancar }: Props) {
+export default function StepObra({ valor, onSelecionar, erro, onVoltar, onAvancar }: Props) {
   const [texto, setTexto] = useState(valor);
   const [aberta, setAberta] = useState(false);
 
@@ -55,6 +56,11 @@ export default function StepObra({ valor, onSelecionar, erro, onAvancar }: Props
       </div>
       {erro && <div className="erro-inline">Selecione uma obra.</div>}
       <div className="rodape">
+        {onVoltar && (
+          <button className="btn-voltar" onClick={onVoltar}>
+            ← Voltar
+          </button>
+        )}
         <button className="btn-avancar" onClick={onAvancar}>
           Avançar →
         </button>

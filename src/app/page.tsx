@@ -109,6 +109,7 @@ export default function Home() {
           turnoInicial={turnoInicial}
           passoInicial={passoInicial}
           onAbrirPainel={sessao.admin ? () => setTelaAdmin("menu") : undefined}
+          onVoltarInicio={sessao.admin ? () => setTelaAdmin("menu") : () => setMostrarTurnos(true)}
         />
       )}
 
