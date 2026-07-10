@@ -27,4 +27,9 @@ export const REFERENCIAS_FOTO: Record<string, ReferenciaFoto> = {
     titulo: "Cava pronta com trena medindo a largura",
     instrucao: "Meça a largura interna da cava com a trena e fotografe como no exemplo abaixo.",
   },
+  "Cava pronta com trena medindo a profundidade": {
+    imagem: "/referencias/cava-pronta-profundidade.jpg",
+    titulo: "Cava pronta com trena medindo a profundidade",
+    instrucao: "Meça a profundidade interna da cava com a trena e fotografe como no exemplo abaixo.",
+  },
 };
