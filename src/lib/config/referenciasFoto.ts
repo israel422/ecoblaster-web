@@ -17,4 +17,9 @@ export const REFERENCIAS_FOTO: Record<string, ReferenciaFoto> = {
     titulo: "Durante a exploração",
     instrucao: "Aponte a câmera para a retroescavadeira durante a execução da cava, como no exemplo abaixo.",
   },
+  "Cava pronta": {
+    imagem: "/referencias/cava-pronta.jpg",
+    titulo: "Cava pronta",
+    instrucao: "Aponte a câmera diretamente para dentro da cava já pronta, como no exemplo abaixo.",
+  },
 };
