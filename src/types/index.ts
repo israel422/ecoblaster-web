@@ -21,6 +21,5 @@ export interface DadosRegistro {
   obra: string;
   data: string; // yyyy-mm-dd
   tipoCava: string;
-  totalCavas: string;
   observacao: string;
 }

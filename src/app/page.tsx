@@ -39,7 +39,7 @@ export default function Home() {
 
   function continuarFotos(turno: TurnoRegistro) {
     setTurnoInicial(turno);
-    setPassoInicial(6);
+    setPassoInicial(5);
     setMostrarTurnos(false);
     setWizardKey((k) => k + 1);
   }

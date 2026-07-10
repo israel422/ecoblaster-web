@@ -12,7 +12,6 @@ const LABEL_ANTES_DO_SOLO = "Antes de explorar o solo";
 interface Props {
   obra: string;
   tipoCava: string;
-  totalCavas: string;
   operador: string;
   fotos: FotoItem[];
   onFotosChange: (fotos: FotoItem[]) => void;
@@ -24,7 +23,6 @@ interface Props {
 export default function StepFotos({
   obra,
   tipoCava,
-  totalCavas,
   operador,
   fotos,
   onFotosChange,
@@ -40,6 +38,7 @@ export default function StepFotos({
   const [referenciaParaIdx, setReferenciaParaIdx] = useState<number | null>(null);
 
   const feitas = fotos.filter((f) => f.blob).length;
+  const qtdCavas = new Set(fotos.map((f) => f.cava)).size;
 
   // CRÍTICO: input.click() precisa rodar de forma síncrona dentro do toque do
   // usuário. O GPS é buscado em paralelo, sem bloquear a abertura da câmera —
@@ -112,8 +111,7 @@ export default function StepFotos({
     <>
       <div className="passo-titulo">Fotos das Cavas</div>
       <div className="passo-sub">
-        {totalCavas} cava(s) · {fotos.length > 0 ? fotos.length / Number(totalCavas || 1) : 0} foto(s) cada ·{" "}
-        {feitas}/{fotos.length} fotos tiradas
+        {qtdCavas} cava(s) neste turno · {feitas}/{fotos.length} fotos tiradas
       </div>
 
       <input

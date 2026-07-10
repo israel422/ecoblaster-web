@@ -2,7 +2,7 @@
 
 import { useRef, useState } from "react";
 import type { SessaoOperador, DadosRegistro, FotoItem } from "@/types";
-import { montarFotos } from "@/lib/wizard/montarFotos";
+import { montarFotosParaCava } from "@/lib/wizard/montarFotos";
 import { salvarTurno, apagarTurno, type TurnoRegistro } from "@/lib/idb/turnosDb";
 import { registrarTurnoAbertoNoServidor } from "@/lib/sync/turnosServidor";
 import { sincronizarTurno } from "@/lib/sync/sincronizarTurno";
@@ -11,8 +11,8 @@ import StepObra from "./StepObra";
 import StepData from "./StepData";
 import StepOperador from "./StepOperador";
 import StepTipoCava from "./StepTipoCava";
-import StepTotalCavas from "./StepTotalCavas";
 import StepFotos from "./StepFotos";
+import StepDecisaoCava from "./StepDecisaoCava";
 import StepObservacao from "./StepObservacao";
 
 const TOTAL_PASSOS = 7;
@@ -20,6 +20,10 @@ const TOTAL_PASSOS = 7;
 function hojeISO(): string {
   const h = new Date();
   return `${h.getFullYear()}-${String(h.getMonth() + 1).padStart(2, "0")}-${String(h.getDate()).padStart(2, "0")}`;
+}
+
+function contarCavas(fotos: FotoItem[]): number {
+  return new Set(fotos.map((f) => f.cava)).size || 1;
 }
 
 interface Props {
@@ -37,10 +41,9 @@ export default function WizardShell({ sessao, turnoInicial, passoInicial, onAbri
           obra: turnoInicial.obra,
           data: turnoInicial.data,
           tipoCava: turnoInicial.tipoCava,
-          totalCavas: turnoInicial.totalCavas,
           observacao: turnoInicial.observacao,
         }
-      : { obra: "", data: hojeISO(), tipoCava: "", totalCavas: "", observacao: "" }
+      : { obra: "", data: hojeISO(), tipoCava: "", observacao: "" }
   );
   const [fotos, setFotos] = useState<FotoItem[]>(turnoInicial?.fotos ?? []);
   const [enviando, setEnviando] = useState(false);
@@ -50,13 +53,10 @@ export default function WizardShell({ sessao, turnoInicial, passoInicial, onAbri
 
   const turnoIdRef = useRef<number | undefined>(turnoInicial?.id);
   const serverIdRef = useRef<string | undefined>(turnoInicial?.serverId);
-  const fotosGeradasPara = useRef<{ tipo: string; total: string } | null>(
-    turnoInicial ? { tipo: turnoInicial.tipoCava, total: turnoInicial.totalCavas } : null
-  );
+  const tipoGeradoRef = useRef<string | null>(turnoInicial ? turnoInicial.tipoCava : null);
 
   const [erroObra, setErroObra] = useState(false);
   const [erroTipo, setErroTipo] = useState(false);
-  const [erroTotal, setErroTotal] = useState(false);
   const [erroFotos, setErroFotos] = useState(false);
 
   async function persistirTurno(fotosAtuais: FotoItem[]) {
@@ -69,7 +69,7 @@ export default function WizardShell({ sessao, turnoInicial, passoInicial, onAbri
       obra: dados.obra,
       data: dados.data,
       tipoCava: dados.tipoCava,
-      totalCavas: dados.totalCavas,
+      totalCavas: String(contarCavas(fotosAtuais)),
       observacao: dados.observacao,
       fotos: fotosAtuais,
       criadoEm: new Date().toISOString(),
@@ -98,34 +98,38 @@ export default function WizardShell({ sessao, turnoInicial, passoInicial, onAbri
       setTimeout(() => setErroTipo(false), 2500);
       return;
     }
-    if (n === 6 && !dados.totalCavas) {
-      setErroTotal(true);
-      setTimeout(() => setErroTotal(false), 2500);
-      return;
+
+    if (n === 5 && (fotos.length === 0 || tipoGeradoRef.current !== dados.tipoCava)) {
+      const fotosDaCava1 = montarFotosParaCava(dados.tipoCava, 1);
+      tipoGeradoRef.current = dados.tipoCava;
+      setFotos(fotosDaCava1);
+      persistirTurno(fotosDaCava1);
     }
 
-    let fotosParaUsar = fotos;
-    if (n === 6) {
-      const jaGerado =
-        fotosGeradasPara.current?.tipo === dados.tipoCava && fotosGeradasPara.current?.total === dados.totalCavas;
-      if (!jaGerado || fotos.length === 0) {
-        fotosParaUsar = montarFotos(dados.tipoCava, dados.totalCavas);
-        fotosGeradasPara.current = { tipo: dados.tipoCava, total: dados.totalCavas };
-        setFotos(fotosParaUsar);
-      }
-    }
+    setPasso(n);
+  }
 
-    if (n === 7 && !(fotos.length > 0 && fotos.every((f) => f.blob))) {
+  function avancarDeFotos() {
+    if (!(fotos.length > 0 && fotos.every((f) => f.blob))) {
       setErroFotos(true);
       setTimeout(() => setErroFotos(false), 3000);
       return;
     }
+    persistirTurno(fotos);
+    setPasso(6);
+  }
 
-    if (n >= 6) {
-      persistirTurno(fotosParaUsar);
-    }
+  function adicionarCava() {
+    const proximaCava = Math.max(...fotos.map((f) => f.cava)) + 1;
+    const fotosNovaCava = montarFotosParaCava(dados.tipoCava, proximaCava);
+    const novaLista = [...fotos, ...fotosNovaCava];
+    setFotos(novaLista);
+    persistirTurno(novaLista);
+    setPasso(5);
+  }
 
-    setPasso(n);
+  function encerrarTurno() {
+    setPasso(7);
   }
 
   function atualizarFotos(novaLista: FotoItem[]) {
@@ -146,7 +150,7 @@ export default function WizardShell({ sessao, turnoInicial, passoInicial, onAbri
       obra: dados.obra,
       data: dados.data,
       tipoCava: dados.tipoCava,
-      totalCavas: dados.totalCavas,
+      totalCavas: String(contarCavas(fotos)),
       observacao: dados.observacao,
       fotos,
       criadoEm: new Date().toISOString(),
@@ -170,7 +174,7 @@ export default function WizardShell({ sessao, turnoInicial, passoInicial, onAbri
         <div className="sucesso-icon">✅</div>
         <div className="sucesso-titulo">Registrado!</div>
         <div className="sucesso-sub">
-          Obra {dados.obra} · {dados.tipoCava} · {dados.totalCavas} cavas
+          Obra {dados.obra} · {dados.tipoCava} · {contarCavas(fotos)} cava(s)
         </div>
         <button className="btn-novo" onClick={() => window.location.reload()}>
           Novo Registro
@@ -235,26 +239,24 @@ export default function WizardShell({ sessao, turnoInicial, passoInicial, onAbri
       )}
 
       {passo === 5 && (
-        <StepTotalCavas
-          valor={dados.totalCavas}
-          onMudar={(totalCavas) => setDados((d) => ({ ...d, totalCavas }))}
-          erro={erroTotal}
-          onVoltar={() => irPara(4)}
-          onAvancar={() => irPara(6)}
-        />
-      )}
-
-      {passo === 6 && (
         <StepFotos
           obra={dados.obra}
           tipoCava={dados.tipoCava}
-          totalCavas={dados.totalCavas}
           operador={sessao.nome}
           fotos={fotos}
           onFotosChange={atualizarFotos}
           erro={erroFotos}
-          onVoltar={() => irPara(5)}
-          onAvancar={() => irPara(7)}
+          onVoltar={() => irPara(4)}
+          onAvancar={avancarDeFotos}
+        />
+      )}
+
+      {passo === 6 && (
+        <StepDecisaoCava
+          cava={Math.max(...fotos.map((f) => f.cava), 1)}
+          onVoltar={() => setPasso(5)}
+          onAdicionarCava={adicionarCava}
+          onEncerrarTurno={encerrarTurno}
         />
       )}
 
@@ -265,7 +267,7 @@ export default function WizardShell({ sessao, turnoInicial, passoInicial, onAbri
           enviando={enviando}
           progresso={progresso}
           erro={erroEnvio}
-          onVoltar={() => irPara(6)}
+          onVoltar={() => setPasso(6)}
           onEnviar={enviar}
         />
       )}
