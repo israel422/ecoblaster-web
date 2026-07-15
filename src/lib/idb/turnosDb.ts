@@ -40,8 +40,12 @@ function abrirDB() {
 
 export async function salvarTurno(turno: TurnoRegistro): Promise<number> {
   const db = await abrirDB();
-  turno.atualizadoEm = new Date().toISOString();
-  const id = await db.put("turnos", turno);
+  const paraSalvar: TurnoRegistro = { ...turno, atualizadoEm: new Date().toISOString() };
+  // No Safari/iOS, "id" presente com valor undefined (em vez de ausente) faz o
+  // gerador automático de chave do IndexedDB falhar com "not a valid key" —
+  // por isso removemos a propriedade em vez de deixá-la como undefined.
+  if (paraSalvar.id === undefined) delete paraSalvar.id;
+  const id = await db.put("turnos", paraSalvar);
   return id as number;
 }
 

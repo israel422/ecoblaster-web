@@ -55,13 +55,10 @@ export async function sincronizarTurno(
     if (!foto.blob) {
       return { sucesso: false, erro: `Falta tirar a foto: ${foto.label} (cava ${foto.cava})` };
     }
+    let resultado: { url: string };
     try {
       const nomeArquivo = `obra_${turno.obra}/cava${foto.cava}_foto${foto.fotoNum}_${Date.now()}.jpg`;
-      const resultado = await enviarFotoComTimeout(nomeArquivo, foto.blob);
-      fotos[i] = { ...foto, uploadedUrl: resultado.url };
-      feitas++;
-      onProgress?.(feitas, total);
-      await salvarTurno({ ...turno, fotos, id: turno.id });
+      resultado = await enviarFotoComTimeout(nomeArquivo, foto.blob);
     } catch (err) {
       const abortou = err instanceof DOMException && err.name === "AbortError";
       const detalhe = abortou
@@ -72,6 +69,20 @@ export async function sincronizarTurno(
       return {
         sucesso: false,
         erro: `Falha ao enviar foto (${detalhe}). O que já enviou foi salvo, toque em Sincronizar de novo quando o sinal melhorar.`,
+      };
+    }
+
+    fotos[i] = { ...foto, uploadedUrl: resultado.url };
+    feitas++;
+    onProgress?.(feitas, total);
+
+    try {
+      await salvarTurno({ ...turno, fotos, id: turno.id });
+    } catch (err) {
+      const detalhe = err instanceof Error ? err.message : String(err);
+      return {
+        sucesso: false,
+        erro: `Foto enviada, mas falhou ao salvar o progresso no aparelho (${detalhe}). Toque em Sincronizar de novo.`,
       };
     }
   }
