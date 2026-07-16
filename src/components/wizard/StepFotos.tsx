@@ -30,7 +30,9 @@ export default function StepFotos({
   onAvancar,
 }: Props) {
   const inputRef = useRef<HTMLInputElement>(null);
+  const inputGaleriaRef = useRef<HTMLInputElement>(null);
   const fotoIndexRef = useRef<number>(-1);
+  const origemRef = useRef<"camera" | "galeria">("camera");
   const gpsRef = useRef<{ lat: number; lon: number } | null>(null);
   const [previewBlob, setPreviewBlob] = useState<Blob | null>(null);
   const [idxParaApagar, setIdxParaApagar] = useState<number | null>(null);
@@ -39,24 +41,35 @@ export default function StepFotos({
   const feitas = fotos.filter((f) => f.blob).length;
   const qtdCavas = new Set(fotos.map((f) => f.cava)).size;
 
+  function buscarGpsEmParalelo() {
+    gpsRef.current = null;
+    if (!navigator.geolocation) return;
+    navigator.geolocation.getCurrentPosition(
+      (pos) => {
+        gpsRef.current = { lat: pos.coords.latitude, lon: pos.coords.longitude };
+      },
+      () => {
+        gpsRef.current = null;
+      },
+      { enableHighAccuracy: true, maximumAge: 0, timeout: 8000 }
+    );
+  }
+
   // CRÍTICO: input.click() precisa rodar de forma síncrona dentro do toque do
   // usuário. O GPS é buscado em paralelo, sem bloquear a abertura da câmera —
   // senão o Safari no iOS ignora silenciosamente a chamada.
   function tirarFoto(idx: number) {
     fotoIndexRef.current = idx;
-    gpsRef.current = null;
+    origemRef.current = "camera";
     inputRef.current?.click();
-    if (navigator.geolocation) {
-      navigator.geolocation.getCurrentPosition(
-        (pos) => {
-          gpsRef.current = { lat: pos.coords.latitude, lon: pos.coords.longitude };
-        },
-        () => {
-          gpsRef.current = null;
-        },
-        { enableHighAccuracy: true, maximumAge: 0, timeout: 8000 }
-      );
-    }
+    buscarGpsEmParalelo();
+  }
+
+  function escolherDaGaleria(idx: number) {
+    fotoIndexRef.current = idx;
+    origemRef.current = "galeria";
+    inputGaleriaRef.current?.click();
+    buscarGpsEmParalelo();
   }
 
   async function processarFoto(input: HTMLInputElement) {
@@ -93,7 +106,8 @@ export default function StepFotos({
 
   function tirarNovamente() {
     setPreviewBlob(null);
-    tirarFoto(fotoIndexRef.current);
+    if (origemRef.current === "galeria") escolherDaGaleria(fotoIndexRef.current);
+    else tirarFoto(fotoIndexRef.current);
   }
 
   function apagarFotoConfirmado() {
@@ -118,6 +132,13 @@ export default function StepFotos({
         type="file"
         accept="image/*"
         capture="environment"
+        style={{ display: "none" }}
+        onChange={(e) => processarFoto(e.currentTarget)}
+      />
+      <input
+        ref={inputGaleriaRef}
+        type="file"
+        accept="image/*"
         style={{ display: "none" }}
         onChange={(e) => processarFoto(e.currentTarget)}
       />
@@ -181,6 +202,19 @@ export default function StepFotos({
                     {item.blob ? "Foto tirada" : "Toque para fotografar"}
                   </div>
                 </div>
+                {!item.blob && (
+                  <button
+                    type="button"
+                    className="foto-del"
+                    title="Escolher da galeria"
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      escolherDaGaleria(idx);
+                    }}
+                  >
+                    🖼️
+                  </button>
+                )}
                 {item.blob && <PhotoThumb blob={item.blob} />}
                 {item.blob && (
                   <button
@@ -231,6 +265,11 @@ export default function StepFotos({
             const idx = referenciaParaIdx;
             setReferenciaParaIdx(null);
             tirarFoto(idx);
+          }}
+          onEscolherGaleria={() => {
+            const idx = referenciaParaIdx;
+            setReferenciaParaIdx(null);
+            escolherDaGaleria(idx);
           }}
         />
       )}

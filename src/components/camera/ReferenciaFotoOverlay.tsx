@@ -6,11 +6,12 @@ import type { ReferenciaFoto } from "@/lib/config/referenciasFoto";
 interface Props {
   referencia: ReferenciaFoto;
   onProsseguir: () => void;
+  onEscolherGaleria: () => void;
 }
 
 const SEGUNDOS_INICIAIS = 5;
 
-export default function ReferenciaFotoOverlay({ referencia, onProsseguir }: Props) {
+export default function ReferenciaFotoOverlay({ referencia, onProsseguir, onEscolherGaleria }: Props) {
   const [segundos, setSegundos] = useState(SEGUNDOS_INICIAIS);
 
   useEffect(() => {
@@ -38,6 +39,23 @@ export default function ReferenciaFotoOverlay({ referencia, onProsseguir }: Prop
           onClick={onProsseguir}
         >
           {segundos > 0 ? `Aguarde ${segundos}s...` : "📷 Tirar Foto"}
+        </button>
+        <button
+          type="button"
+          onClick={onEscolherGaleria}
+          style={{
+            width: "100%",
+            marginTop: 10,
+            padding: 10,
+            border: "none",
+            background: "none",
+            color: "#5f6368",
+            fontSize: 14,
+            textDecoration: "underline",
+            cursor: "pointer",
+          }}
+        >
+          🖼️ Escolher da galeria
         </button>
       </div>
     </div>
