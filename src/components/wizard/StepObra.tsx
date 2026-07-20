@@ -1,7 +1,8 @@
 "use client";
 
-import { useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { OBRAS } from "@/lib/config/obras";
+import { lerObrasExtraCache, atualizarObrasExtraCache } from "@/lib/obras/obrasExtra";
 
 interface Props {
   valor: string;
@@ -14,9 +15,16 @@ interface Props {
 export default function StepObra({ valor, onSelecionar, erro, onVoltar, onAvancar }: Props) {
   const [texto, setTexto] = useState(valor);
   const [aberta, setAberta] = useState(false);
+  const [obrasExtra, setObrasExtra] = useState<string[]>(() => lerObrasExtraCache());
+
+  useEffect(() => {
+    atualizarObrasExtraCache().then(setObrasExtra);
+  }, []);
+
+  const todasObras = useMemo(() => Array.from(new Set([...OBRAS, ...obrasExtra])), [obrasExtra]);
 
   const termo = texto.trim();
-  const opcoes = termo ? OBRAS.filter((o) => o.includes(termo)) : OBRAS;
+  const opcoes = termo ? todasObras.filter((o) => o.includes(termo)) : todasObras;
 
   return (
     <>

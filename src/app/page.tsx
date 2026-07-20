@@ -9,6 +9,7 @@ import AlertModal from "@/components/ui/AlertModal";
 import AdminMenu from "@/components/AdminMenu";
 import PainelFotos from "@/components/painel/PainelFotos";
 import PainelIndicadores from "@/components/painel/PainelIndicadores";
+import GerenciarObras from "@/components/painel/GerenciarObras";
 import type { SessaoOperador } from "@/types";
 import type { TurnoRegistro } from "@/lib/idb/turnosDb";
 import { turnoCompleto } from "@/lib/idb/turnosDb";
@@ -16,7 +17,7 @@ import { obterTurnosParaExibir } from "@/lib/turnos/obterTurnosParaExibir";
 
 export default function Home() {
   const [sessao, setSessao] = useState<SessaoOperador | null>(null);
-  const [telaAdmin, setTelaAdmin] = useState<"menu" | "fotos" | "indicadores" | null>(null);
+  const [telaAdmin, setTelaAdmin] = useState<"menu" | "fotos" | "indicadores" | "obras" | null>(null);
   const [mostrarTurnos, setMostrarTurnos] = useState(false);
   const [turnoInicial, setTurnoInicial] = useState<TurnoRegistro | null>(null);
   const [passoInicial, setPassoInicial] = useState(1);
@@ -83,6 +84,7 @@ export default function Home() {
           onNovoRegistro={irNovoRegistro}
           onPainelFotos={() => setTelaAdmin("fotos")}
           onPainelIndicadores={() => setTelaAdmin("indicadores")}
+          onGerenciarObras={() => setTelaAdmin("obras")}
         />
       )}
       {sessao && sessao.admin && telaAdmin === "fotos" && (
@@ -90,6 +92,9 @@ export default function Home() {
       )}
       {sessao && sessao.admin && telaAdmin === "indicadores" && (
         <PainelIndicadores cpfAdmin={sessao.cpf} onVoltar={() => setTelaAdmin("menu")} />
+      )}
+      {sessao && sessao.admin && telaAdmin === "obras" && (
+        <GerenciarObras cpfAdmin={sessao.cpf} onVoltar={() => setTelaAdmin("menu")} />
       )}
 
       {sessao && telaAdmin === null && mostrarTurnos && (

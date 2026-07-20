@@ -5,9 +5,16 @@ interface Props {
   onNovoRegistro: () => void;
   onPainelFotos: () => void;
   onPainelIndicadores: () => void;
+  onGerenciarObras: () => void;
 }
 
-export default function AdminMenu({ nome, onNovoRegistro, onPainelFotos, onPainelIndicadores }: Props) {
+export default function AdminMenu({
+  nome,
+  onNovoRegistro,
+  onPainelFotos,
+  onPainelIndicadores,
+  onGerenciarObras,
+}: Props) {
   return (
     <div className="turnos-tela">
       <div className="turnos-card">
@@ -20,8 +27,11 @@ export default function AdminMenu({ nome, onNovoRegistro, onPainelFotos, onPaine
         <button type="button" className="btn-avancar" style={{ width: "100%", marginBottom: 14 }} onClick={onPainelFotos}>
           📷 Painel de Fotos
         </button>
-        <button type="button" className="btn-avancar" style={{ width: "100%" }} onClick={onPainelIndicadores}>
+        <button type="button" className="btn-avancar" style={{ width: "100%", marginBottom: 14 }} onClick={onPainelIndicadores}>
           📊 Painel de Indicadores
+        </button>
+        <button type="button" className="btn-avancar" style={{ width: "100%" }} onClick={onGerenciarObras}>
+          🏗️ Obras
         </button>
       </div>
     </div>

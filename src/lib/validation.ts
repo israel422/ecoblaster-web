@@ -32,3 +32,8 @@ export const turnoAbertoSchema = z.object({
 export const encerrarTurnoSchema = z.object({
   encerradoPor: z.string().regex(/^\d{11}$/),
 });
+
+export const novaObraSchema = z.object({
+  codigo: z.string().trim().min(1).max(30),
+  cpf: z.string().regex(/^\d{11}$/),
+});

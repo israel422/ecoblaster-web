@@ -15,6 +15,14 @@ export const registros = pgTable("registros", {
   fotos: jsonb("fotos").notNull(),
 });
 
+// Obras adicionadas pelo admin em tempo de execução, além da lista base
+// embutida no código (src/lib/config/obras.ts).
+export const obrasAdicionadas = pgTable("obras_adicionadas", {
+  codigo: text("codigo").primaryKey(),
+  criadoEm: timestamp("criado_em", { withTimezone: true }).notNull().defaultNow(),
+  criadoPor: text("criado_por").notNull(),
+});
+
 export const acessos = pgTable("acessos", {
   id: bigserial("id", { mode: "number" }).primaryKey(),
   criadoEm: timestamp("criado_em", { withTimezone: true }).notNull().defaultNow(),
