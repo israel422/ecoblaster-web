@@ -6,6 +6,7 @@ import { montarFotosParaCava } from "@/lib/wizard/montarFotos";
 import { salvarTurno, apagarTurno, type TurnoRegistro } from "@/lib/idb/turnosDb";
 import { registrarTurnoAbertoNoServidor } from "@/lib/sync/turnosServidor";
 import { sincronizarTurno } from "@/lib/sync/sincronizarTurno";
+import { enviarFotosEmSegundoPlano } from "@/lib/sync/enviarFotosEmSegundoPlano";
 import Progresso from "./Progresso";
 import StepObra from "./StepObra";
 import StepData from "./StepData";
@@ -116,7 +117,28 @@ export default function WizardShell({ sessao, turnoInicial, passoInicial, onAbri
       return;
     }
     persistirTurno(fotos);
+    enviarFotosDaCavaEmSegundoPlano(fotos);
     setPasso(6);
+  }
+
+  // Sobe as fotos da cava que acabou de ser fechada assim que se avança, em vez
+  // de esperar o "Enviar" no fim do turno inteiro — reduz o risco de perder
+  // tudo se o aparelho travar antes do envio final. Roda em segundo plano
+  // (não trava a navegação) e faz merge por cava+fotoNum no estado atual, pra
+  // não sobrescrever uma cava nova que o usuário já tenha começado enquanto
+  // isso ainda estava subindo.
+  function enviarFotosDaCavaEmSegundoPlano(fotosDaCava: FotoItem[]) {
+    enviarFotosEmSegundoPlano(dados.obra, fotosDaCava).then((atualizadas) => {
+      setFotos((atual) => {
+        const mesclado = atual.map((f) => {
+          if (f.uploadedUrl) return f;
+          const upd = atualizadas.find((a) => a.cava === f.cava && a.fotoNum === f.fotoNum);
+          return upd?.uploadedUrl ? { ...f, uploadedUrl: upd.uploadedUrl } : f;
+        });
+        persistirTurno(mesclado);
+        return mesclado;
+      });
+    });
   }
 
   function adicionarCava() {
