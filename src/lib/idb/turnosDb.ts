@@ -14,6 +14,8 @@ export interface TurnoRegistro {
   fotos: FotoItem[];
   criadoEm: string;
   atualizadoEm: string;
+  /** Números das cavas já registradas individualmente no servidor (1 registro por cava). */
+  cavasRegistradas?: number[];
 }
 
 interface EcoBlasterDB extends DBSchema {
@@ -67,6 +69,17 @@ export async function carregarTurnoPorId(id: number): Promise<TurnoRegistro | un
 export async function apagarTurno(id: number): Promise<void> {
   const db = await abrirDB();
   await db.delete("turnos", id);
+}
+
+// Lê o turno mais recente do IndexedDB antes de marcar a cava (em vez de
+// receber o turno como parâmetro) justamente pra não sobrescrever fotos de
+// uma cava nova que o usuário já tenha começado enquanto o registro da
+// anterior ainda estava em andamento em segundo plano.
+export async function marcarCavaRegistrada(id: number, cava: number): Promise<void> {
+  const turno = await carregarTurnoPorId(id);
+  if (!turno) return;
+  const cavasRegistradas = Array.from(new Set([...(turno.cavasRegistradas ?? []), cava]));
+  await salvarTurno({ ...turno, cavasRegistradas, id });
 }
 
 export function turnoCompleto(turno: Pick<TurnoRegistro, "fotos">): boolean {

@@ -13,6 +13,10 @@ export const registros = pgTable("registros", {
   observacao: text("observacao"),
   // [{ cava: number, fotoNum: number, label: string, url: string }]
   fotos: jsonb("fotos").notNull(),
+  // Liga todos os registros (1 por cava) do mesmo turno — mesmo valor do
+  // turnos_abertos.id daquela sessão. Usado pra aplicar a observação em todas
+  // as cavas do turno no final e pra agrupar visualmente no Painel de Fotos.
+  turnoId: uuid("turno_id"),
 });
 
 // Obras adicionadas pelo admin em tempo de execução, além da lista base

@@ -1,12 +1,13 @@
 "use client";
 
-import { useRef, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import type { SessaoOperador, DadosRegistro, FotoItem } from "@/types";
 import { montarFotosParaCava } from "@/lib/wizard/montarFotos";
-import { salvarTurno, apagarTurno, type TurnoRegistro } from "@/lib/idb/turnosDb";
+import { salvarTurno, apagarTurno, marcarCavaRegistrada, type TurnoRegistro } from "@/lib/idb/turnosDb";
 import { registrarTurnoAbertoNoServidor } from "@/lib/sync/turnosServidor";
 import { sincronizarTurno } from "@/lib/sync/sincronizarTurno";
 import { enviarFotosEmSegundoPlano } from "@/lib/sync/enviarFotosEmSegundoPlano";
+import { registrarCava } from "@/lib/sync/registrarCava";
 import Progresso from "./Progresso";
 import StepObra from "./StepObra";
 import StepData from "./StepData";
@@ -56,6 +57,13 @@ export default function WizardShell({ sessao, turnoInicial, passoInicial, onAbri
   const turnoIdRef = useRef<number | undefined>(turnoInicial?.id);
   const serverIdRef = useRef<string | undefined>(turnoInicial?.serverId);
   const tipoGeradoRef = useRef<string | null>(turnoInicial ? turnoInicial.tipoCava : null);
+  const cavasRegistradasRef = useRef<Set<number>>(new Set(turnoInicial?.cavasRegistradas ?? []));
+  const fotosRef = useRef(fotos);
+  const processamentosPendentesRef = useRef<Promise<void>[]>([]);
+
+  useEffect(() => {
+    fotosRef.current = fotos;
+  }, [fotos]);
 
   const [erroObra, setErroObra] = useState(false);
   const [erroFotos, setErroFotos] = useState(false);
@@ -75,6 +83,7 @@ export default function WizardShell({ sessao, turnoInicial, passoInicial, onAbri
       fotos: fotosAtuais,
       criadoEm: new Date().toISOString(),
       atualizadoEm: new Date().toISOString(),
+      cavasRegistradas: [...cavasRegistradasRef.current],
     };
     const id = await salvarTurno(turno);
     turnoIdRef.current = id;
@@ -116,19 +125,21 @@ export default function WizardShell({ sessao, turnoInicial, passoInicial, onAbri
       setTimeout(() => setErroFotos(false), 3000);
       return;
     }
+    const cavaFechada = Math.max(...fotos.map((f) => f.cava));
     persistirTurno(fotos);
-    enviarFotosDaCavaEmSegundoPlano(fotos);
+    processarCavaEmSegundoPlano(cavaFechada, fotos);
     setPasso(6);
   }
 
-  // Sobe as fotos da cava que acabou de ser fechada assim que se avança, em vez
-  // de esperar o "Enviar" no fim do turno inteiro — reduz o risco de perder
-  // tudo se o aparelho travar antes do envio final. Roda em segundo plano
-  // (não trava a navegação) e faz merge por cava+fotoNum no estado atual, pra
-  // não sobrescrever uma cava nova que o usuário já tenha começado enquanto
-  // isso ainda estava subindo.
-  function enviarFotosDaCavaEmSegundoPlano(fotosDaCava: FotoItem[]) {
-    enviarFotosEmSegundoPlano(dados.obra, fotosDaCava).then((atualizadas) => {
+  // Ao fechar uma cava (avançar), sobe as fotos dela e já cria o registro no
+  // banco pra aquela cava — não espera o "Enviar" no fim do turno inteiro.
+  // Roda em segundo plano (não trava a navegação): falha aqui não bloqueia o
+  // usuário, o "Enviar" final tenta de novo qualquer cava ainda não
+  // registrada. Faz merge por cava+fotoNum no estado (nunca substitui o
+  // array inteiro), pra não sobrescrever uma cava nova que o usuário já
+  // tenha começado enquanto isso ainda estava em andamento.
+  function processarCavaEmSegundoPlano(cava: number, fotosDaCava: FotoItem[]) {
+    const promessa = enviarFotosEmSegundoPlano(dados.obra, fotosDaCava).then(async (atualizadas) => {
       setFotos((atual) => {
         const mesclado = atual.map((f) => {
           if (f.uploadedUrl) return f;
@@ -138,6 +149,28 @@ export default function WizardShell({ sessao, turnoInicial, passoInicial, onAbri
         persistirTurno(mesclado);
         return mesclado;
       });
+
+      if (cavasRegistradasRef.current.has(cava)) return;
+      const fotosDaCavaAtualizadas = atualizadas.filter((f) => f.cava === cava);
+      if (fotosDaCavaAtualizadas.length === 0 || !fotosDaCavaAtualizadas.every((f) => f.uploadedUrl)) return;
+
+      const resultado = await registrarCava(
+        { data: dados.data, obra: dados.obra, tipoCava: dados.tipoCava, operador: sessao.nome, cpf: sessao.cpf, turnoServerId: serverIdRef.current },
+        fotosDaCavaAtualizadas
+      );
+      if (resultado.sucesso) {
+        cavasRegistradasRef.current.add(cava);
+        if (turnoIdRef.current) await marcarCavaRegistrada(turnoIdRef.current, cava);
+      }
+    });
+
+    // "Enviar" (no fim do turno) espera esses processamentos terminarem antes
+    // de seguir — sem isso, se o usuário for rápido (encerra e envia antes do
+    // upload/registro da última cava terminar), a cava podia acabar sendo
+    // registrada duas vezes (uma aqui, outra no envio final).
+    processamentosPendentesRef.current.push(promessa);
+    promessa.finally(() => {
+      processamentosPendentesRef.current = processamentosPendentesRef.current.filter((p) => p !== promessa);
     });
   }
 
@@ -164,6 +197,10 @@ export default function WizardShell({ sessao, turnoInicial, passoInicial, onAbri
     setErroEnvio(null);
     setProgresso(null);
 
+    // espera qualquer registro de cava ainda em andamento em segundo plano
+    // terminar, senão o envio final pode disputar/duplicar registro com ele
+    await Promise.all(processamentosPendentesRef.current);
+
     const turno: TurnoRegistro = {
       id: turnoIdRef.current,
       serverId: serverIdRef.current,
@@ -172,11 +209,12 @@ export default function WizardShell({ sessao, turnoInicial, passoInicial, onAbri
       obra: dados.obra,
       data: dados.data,
       tipoCava: dados.tipoCava,
-      totalCavas: String(contarCavas(fotos)),
+      totalCavas: String(contarCavas(fotosRef.current)),
       observacao: dados.observacao,
-      fotos,
+      fotos: fotosRef.current,
       criadoEm: new Date().toISOString(),
       atualizadoEm: new Date().toISOString(),
+      cavasRegistradas: [...cavasRegistradasRef.current],
     };
 
     const resultado = await sincronizarTurno(turno, (feitas, total) => setProgresso({ feitas, total }));

@@ -1,15 +1,29 @@
 import { salvarTurno, type TurnoRegistro } from "@/lib/idb/turnosDb";
 import { enviarFotoComTimeout } from "./enviarFotoComTimeout";
+import { registrarCava } from "./registrarCava";
+import { encerrarTurnoNoServidor } from "./turnosServidor";
 
 export interface ResultadoSync {
   sucesso: boolean;
   erro?: string;
 }
 
-// Envia as fotos ainda não enviadas (uma de cada vez, persistindo a URL local a
-// cada sucesso pra não perder progresso se a conexão cair no meio), depois
-// registra o turno de vez no banco. Usado tanto no "Registrar" do wizard quanto
-// no botão "Sincronizar" da tela de Turnos em Aberto.
+function agruparPorCava(fotos: TurnoRegistro["fotos"]): Map<number, TurnoRegistro["fotos"]> {
+  const porCava = new Map<number, TurnoRegistro["fotos"]>();
+  for (const foto of fotos) {
+    const lista = porCava.get(foto.cava) ?? [];
+    lista.push(foto);
+    porCava.set(foto.cava, lista);
+  }
+  return porCava;
+}
+
+// Cada cava já vira um registro no banco assim que fecha (ver WizardShell,
+// avancarDeFotos). Esta função é o "fecho": garante que nenhuma cava ficou
+// sem registrar (ex: falhou por falta de sinal na hora), aplica a observação
+// em todas as cavas do turno e encerra o turno no servidor. Usado tanto no
+// "Registrar" do wizard quanto no botão "Sincronizar" da tela de Turnos em
+// Aberto.
 export async function sincronizarTurno(
   turno: TurnoRegistro,
   onProgress?: (feitas: number, total: number) => void
@@ -57,30 +71,48 @@ export async function sincronizarTurno(
     }
   }
 
-  const payload = {
-    data: turno.data,
-    obra: turno.obra,
-    tipoCava: turno.tipoCava,
-    totalCavas: Number(turno.totalCavas),
-    operador: turno.operador,
-    cpf: turno.cpf,
-    observacao: turno.observacao,
-    fotos: fotos.map((f) => ({ cava: f.cava, fotoNum: f.fotoNum, label: f.label, url: f.uploadedUrl! })),
-    turnoServerId: turno.serverId,
-  };
+  const cavasRegistradas = new Set(turno.cavasRegistradas ?? []);
+  const porCava = agruparPorCava(fotos);
 
-  try {
-    const resp = await fetch("/api/registros", {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify(payload),
-    });
-    const json = await resp.json();
-    if (!resp.ok || !json.sucesso) {
-      return { sucesso: false, erro: json.erro || "Erro ao salvar registro." };
+  for (const [cava, fotosCava] of porCava) {
+    if (cavasRegistradas.has(cava)) continue;
+    const resultado = await registrarCava(
+      {
+        data: turno.data,
+        obra: turno.obra,
+        tipoCava: turno.tipoCava,
+        operador: turno.operador,
+        cpf: turno.cpf,
+        turnoServerId: turno.serverId,
+      },
+      fotosCava
+    );
+    if (!resultado.sucesso) {
+      return { sucesso: false, erro: resultado.erro || `Falha ao registrar a cava ${cava}. Toque em Sincronizar de novo.` };
     }
-    return { sucesso: true };
-  } catch {
-    return { sucesso: false, erro: "Sem conexão. As fotos já foram enviadas, tente registrar de novo quando tiver internet." };
+    cavasRegistradas.add(cava);
+    try {
+      await salvarTurno({ ...turno, fotos, cavasRegistradas: [...cavasRegistradas], id: turno.id });
+    } catch {
+      // não impede de seguir — a cava já está registrada no servidor, só não
+      // conseguimos anotar isso localmente agora; na pior das hipóteses tenta
+      // registrar nela de novo numa próxima sincronização (server ignora
+      // duplicata? não — mas nesse ponto o turno já está sendo encerrado)
+    }
   }
+
+  if (turno.serverId) {
+    try {
+      await fetch(`/api/registros/turno/${turno.serverId}`, {
+        method: "PATCH",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ cpf: turno.cpf, observacao: turno.observacao }),
+      });
+    } catch {
+      // melhor esforço — observação é só um complemento, não bloqueia o encerramento
+    }
+    await encerrarTurnoNoServidor(turno.serverId, turno.cpf);
+  }
+
+  return { sucesso: true };
 }

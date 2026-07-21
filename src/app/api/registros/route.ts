@@ -1,7 +1,7 @@
 import { NextResponse } from "next/server";
 import { and, desc, eq, gte, ilike, lte } from "drizzle-orm";
 import { db } from "@/lib/db/client";
-import { registros, turnosAbertos } from "@/lib/db/schema";
+import { registros } from "@/lib/db/schema";
 import { buscarOperador, isAdmin } from "@/lib/config/operadores";
 import { registroSchema } from "@/lib/validation";
 
@@ -55,14 +55,8 @@ export async function POST(req: Request) {
       cpf: operador.cpf,
       observacao: parsed.data.observacao,
       fotos: parsed.data.fotos,
+      turnoId: parsed.data.turnoServerId,
     });
-
-    if (parsed.data.turnoServerId) {
-      await db
-        .update(turnosAbertos)
-        .set({ ativo: false, encerradoEm: new Date(), encerradoPor: operador.cpf, atualizadoEm: new Date() })
-        .where(eq(turnosAbertos.id, parsed.data.turnoServerId));
-    }
 
     return NextResponse.json({ sucesso: true });
   } catch (err) {

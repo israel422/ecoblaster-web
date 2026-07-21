@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { TIPOS_CAVA } from "@/lib/config/tiposCava";
 import ConfirmModal from "@/components/ui/ConfirmModal";
 
@@ -22,6 +22,59 @@ interface RegistroLinha {
   cpf: string;
   observacao: string | null;
   fotos: FotoRegistro[];
+  turnoId: string | null;
+}
+
+// Desde que cada cava vira um registro próprio no banco (ver sincronizarTurno
+// e registrarCava), várias linhas podem pertencer ao mesmo turno (mesmo
+// turnoId). Aqui agrupamos só pra exibição — apagar/baixar afeta todas as
+// cavas do grupo. Registros sem turnoId (ex: dados antigos, ou turno cujo
+// registro-aberto no servidor falhou) aparecem sozinhos.
+interface GrupoRegistro {
+  chave: string;
+  ids: number[];
+  criadoEm: string;
+  data: string;
+  obra: string;
+  tipoCava: string;
+  totalCavas: number;
+  operador: string;
+  cpf: string;
+  observacao: string | null;
+  fotos: FotoRegistro[];
+}
+
+function agruparRegistros(lista: RegistroLinha[]): GrupoRegistro[] {
+  const grupos = new Map<string, GrupoRegistro>();
+  for (const r of lista) {
+    const chave = r.turnoId ?? `solo-${r.id}`;
+    const atual = grupos.get(chave);
+    if (!atual) {
+      grupos.set(chave, {
+        chave,
+        ids: [r.id],
+        criadoEm: r.criadoEm,
+        data: r.data,
+        obra: r.obra,
+        tipoCava: r.tipoCava,
+        totalCavas: r.totalCavas,
+        operador: r.operador,
+        cpf: r.cpf,
+        observacao: r.observacao,
+        fotos: [...r.fotos],
+      });
+    } else {
+      atual.ids.push(r.id);
+      atual.totalCavas += r.totalCavas;
+      atual.fotos.push(...r.fotos);
+      if (!atual.observacao && r.observacao) atual.observacao = r.observacao;
+      if (r.criadoEm > atual.criadoEm) atual.criadoEm = r.criadoEm;
+    }
+  }
+  const resultado = Array.from(grupos.values());
+  for (const g of resultado) g.fotos.sort((a, b) => a.cava - b.cava || a.fotoNum - b.fotoNum);
+  resultado.sort((a, b) => (a.criadoEm < b.criadoEm ? 1 : -1));
+  return resultado;
 }
 
 interface Filtros {
@@ -38,10 +91,12 @@ export default function PainelFotos({ cpfAdmin, onVoltar }: { cpfAdmin: string; 
   const [registrosLista, setRegistrosLista] = useState<RegistroLinha[]>([]);
   const [carregando, setCarregando] = useState(false);
   const [filtros, setFiltros] = useState<Filtros>(FILTROS_VAZIOS);
-  const [registroAberto, setRegistroAberto] = useState<RegistroLinha | null>(null);
+  const [registroAberto, setRegistroAberto] = useState<GrupoRegistro | null>(null);
   const [fotoAbertaIdx, setFotoAbertaIdx] = useState<number | null>(null);
-  const [registroParaApagar, setRegistroParaApagar] = useState<RegistroLinha | null>(null);
+  const [registroParaApagar, setRegistroParaApagar] = useState<GrupoRegistro | null>(null);
   const [apagando, setApagando] = useState(false);
+
+  const agrupados = useMemo(() => agruparRegistros(registrosLista), [registrosLista]);
 
   useEffect(() => {
     if (fotoAbertaIdx === null || !registroAberto) return;
@@ -87,7 +142,7 @@ export default function PainelFotos({ cpfAdmin, onVoltar }: { cpfAdmin: string; 
     URL.revokeObjectURL(objectUrl);
   }
 
-  async function baixarTodasFotos(registro: RegistroLinha) {
+  async function baixarTodasFotos(registro: GrupoRegistro) {
     for (const f of registro.fotos) {
       const nome = `obra${registro.obra}_cava${f.cava}_${f.label.replace(/[^a-zA-Z0-9]+/g, "_")}.jpg`;
       await baixarFoto(f.url, nome);
@@ -97,10 +152,14 @@ export default function PainelFotos({ cpfAdmin, onVoltar }: { cpfAdmin: string; 
   async function apagarRegistroConfirmado() {
     if (!registroParaApagar) return;
     setApagando(true);
-    const resp = await fetch(`/api/registros/${registroParaApagar.id}?cpf=${cpfAdmin}`, { method: "DELETE" });
-    if (resp.ok) {
-      setRegistrosLista((lista) => lista.filter((r) => r.id !== registroParaApagar.id));
-      if (registroAberto?.id === registroParaApagar.id) {
+    const idsParaApagar = registroParaApagar.ids;
+    const resultados = await Promise.all(
+      idsParaApagar.map((id) => fetch(`/api/registros/${id}?cpf=${cpfAdmin}`, { method: "DELETE" }))
+    );
+    if (resultados.every((r) => r.ok)) {
+      const apagadosSet = new Set(idsParaApagar);
+      setRegistrosLista((lista) => lista.filter((r) => !apagadosSet.has(r.id)));
+      if (registroAberto?.chave === registroParaApagar.chave) {
         setRegistroAberto(null);
         setFotoAbertaIdx(null);
       }
@@ -221,28 +280,28 @@ export default function PainelFotos({ cpfAdmin, onVoltar }: { cpfAdmin: string; 
             </tr>
           </thead>
           <tbody>
-            {registrosLista.map((r) => (
+            {agrupados.map((g) => (
               <tr
-                key={r.id}
+                key={g.chave}
                 style={{ borderBottom: "1px solid #eee", cursor: "pointer" }}
                 onClick={() => {
-                  setRegistroAberto(r);
+                  setRegistroAberto(g);
                   setFotoAbertaIdx(null);
                 }}
               >
-                <td style={{ padding: 8 }}>{r.data.slice(0, 10).split("-").reverse().join("/")}</td>
-                <td style={{ padding: 8 }}>{r.obra}</td>
-                <td style={{ padding: 8 }}>{r.tipoCava}</td>
-                <td style={{ padding: 8 }}>{r.totalCavas}</td>
-                <td style={{ padding: 8 }}>{r.operador}</td>
-                <td style={{ padding: 8 }}>{r.fotos.length} 📷</td>
+                <td style={{ padding: 8 }}>{g.data.slice(0, 10).split("-").reverse().join("/")}</td>
+                <td style={{ padding: 8 }}>{g.obra}</td>
+                <td style={{ padding: 8 }}>{g.tipoCava}</td>
+                <td style={{ padding: 8 }}>{g.totalCavas}</td>
+                <td style={{ padding: 8 }}>{g.operador}</td>
+                <td style={{ padding: 8 }}>{g.fotos.length} 📷</td>
                 <td style={{ padding: 8 }}>
                   <button
                     type="button"
                     className="foto-del"
                     onClick={(e) => {
                       e.stopPropagation();
-                      setRegistroParaApagar(r);
+                      setRegistroParaApagar(g);
                     }}
                   >
                     🗑️
@@ -252,7 +311,7 @@ export default function PainelFotos({ cpfAdmin, onVoltar }: { cpfAdmin: string; 
             ))}
           </tbody>
         </table>
-        {registrosLista.length === 0 && !carregando && (
+        {agrupados.length === 0 && !carregando && (
           <p style={{ color: "#888", marginTop: 20 }}>Nenhum registro encontrado.</p>
         )}
       </div>

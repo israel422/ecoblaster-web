@@ -38,6 +38,11 @@ export const novaObraSchema = z.object({
   cpf: z.string().regex(/^\d{11}$/),
 });
 
+export const observacaoTurnoSchema = z.object({
+  cpf: z.string().regex(/^\d{11}$/),
+  observacao: z.string().optional().default(""),
+});
+
 export const pushSubscriptionSchema = z.object({
   cpf: z.string().regex(/^\d{11}$/),
   endpoint: z.string().url(),
