@@ -80,6 +80,7 @@ export default function Home() {
 
       {sessao && sessao.admin && telaAdmin === "menu" && (
         <AdminMenu
+          cpf={sessao.cpf}
           nome={sessao.nome}
           onNovoRegistro={irNovoRegistro}
           onPainelFotos={() => setTelaAdmin("fotos")}

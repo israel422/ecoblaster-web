@@ -1,0 +1,8 @@
+{
+  "crons": [
+    {
+      "path": "/api/cron/relatorio-turnos",
+      "schedule": "0 16 * * *"
+    }
+  ]
+}

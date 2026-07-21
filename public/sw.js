@@ -11,6 +11,32 @@ self.addEventListener("activate", (event) => {
   self.clients.claim();
 });
 
+self.addEventListener("push", (event) => {
+  if (!event.data) return;
+  const dados = event.data.json();
+  event.waitUntil(
+    self.registration.showNotification(dados.titulo || "EcoBlaster", {
+      body: dados.corpo || "",
+      icon: "/icons/icon-192.png",
+      badge: "/icons/icon-192.png",
+      data: { url: dados.url || "/" },
+    })
+  );
+});
+
+self.addEventListener("notificationclick", (event) => {
+  event.notification.close();
+  const url = event.notification.data?.url || "/";
+  event.waitUntil(
+    self.clients.matchAll({ type: "window" }).then((clients) => {
+      for (const client of clients) {
+        if (client.url.includes(self.location.origin) && "focus" in client) return client.focus();
+      }
+      return self.clients.openWindow(url);
+    })
+  );
+});
+
 // Nunca cacheia /api/* — precisam sempre de dado fresco (turnos abertos, etc.).
 // Pro resto (app shell, ícones), tenta a rede primeiro e guarda em cache; se
 // não tiver rede, serve a última versão cacheada.

@@ -37,3 +37,12 @@ export const novaObraSchema = z.object({
   codigo: z.string().trim().min(1).max(30),
   cpf: z.string().regex(/^\d{11}$/),
 });
+
+export const pushSubscriptionSchema = z.object({
+  cpf: z.string().regex(/^\d{11}$/),
+  endpoint: z.string().url(),
+  keys: z.object({
+    p256dh: z.string().min(1),
+    auth: z.string().min(1),
+  }),
+});

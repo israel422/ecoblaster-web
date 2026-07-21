@@ -23,6 +23,16 @@ export const obrasAdicionadas = pgTable("obras_adicionadas", {
   criadoPor: text("criado_por").notNull(),
 });
 
+// Inscrições de notificação push (Web Push), uma por aparelho/navegador que
+// aceitou receber notificações (botão "Ativar notificações" no menu admin).
+export const pushSubscriptions = pgTable("push_subscriptions", {
+  endpoint: text("endpoint").primaryKey(),
+  cpf: text("cpf").notNull(),
+  p256dh: text("p256dh").notNull(),
+  auth: text("auth").notNull(),
+  criadoEm: timestamp("criado_em", { withTimezone: true }).notNull().defaultNow(),
+});
+
 export const acessos = pgTable("acessos", {
   id: bigserial("id", { mode: "number" }).primaryKey(),
   criadoEm: timestamp("criado_em", { withTimezone: true }).notNull().defaultNow(),
