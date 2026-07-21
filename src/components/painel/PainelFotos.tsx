@@ -47,7 +47,10 @@ interface GrupoRegistro {
 function agruparRegistros(lista: RegistroLinha[]): GrupoRegistro[] {
   const grupos = new Map<string, GrupoRegistro>();
   for (const r of lista) {
-    const chave = r.turnoId ?? `solo-${r.id}`;
+    // Só junta na mesma linha se for o mesmo turno E o mesmo tipo de cava —
+    // se o operador mudou de tipo (ex: Cava em Rocha → Cava Normal) no meio
+    // do dia, cada tipo aparece em linha separada, mesmo que compartilhem turnoId.
+    const chave = `${r.turnoId ?? `solo-${r.id}`}::${r.tipoCava}`;
     const atual = grupos.get(chave);
     if (!atual) {
       grupos.set(chave, {
