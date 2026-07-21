@@ -7,7 +7,7 @@ import { salvarTurno, apagarTurno, marcarCavaRegistrada, type TurnoRegistro } fr
 import { registrarTurnoAbertoNoServidor } from "@/lib/sync/turnosServidor";
 import { sincronizarTurno } from "@/lib/sync/sincronizarTurno";
 import { enviarFotosEmSegundoPlano } from "@/lib/sync/enviarFotosEmSegundoPlano";
-import { registrarCava } from "@/lib/sync/registrarCava";
+import { registrarCava, chaveCava } from "@/lib/sync/registrarCava";
 import Progresso from "./Progresso";
 import StepObra from "./StepObra";
 import StepData from "./StepData";
@@ -57,7 +57,7 @@ export default function WizardShell({ sessao, turnoInicial, passoInicial, onAbri
   const turnoIdRef = useRef<number | undefined>(turnoInicial?.id);
   const serverIdRef = useRef<string | undefined>(turnoInicial?.serverId);
   const tipoGeradoRef = useRef<string | null>(turnoInicial ? turnoInicial.tipoCava : null);
-  const cavasRegistradasRef = useRef<Set<number>>(new Set(turnoInicial?.cavasRegistradas ?? []));
+  const cavasRegistradasRef = useRef<Set<string>>(new Set(turnoInicial?.cavasRegistradas ?? []));
   const fotosRef = useRef(fotos);
   const processamentosPendentesRef = useRef<Promise<void>[]>([]);
 
@@ -109,11 +109,21 @@ export default function WizardShell({ sessao, turnoInicial, passoInicial, onAbri
   function selecionarTipoEAvancar(tipoCava: string) {
     setDados((d) => ({ ...d, tipoCava }));
 
-    if (fotos.length === 0 || tipoGeradoRef.current !== tipoCava) {
+    if (fotos.length === 0) {
       const fotosDaCava1 = montarFotosParaCava(tipoCava, 1);
       tipoGeradoRef.current = tipoCava;
       setFotos(fotosDaCava1);
       persistirTurno(fotosDaCava1, tipoCava);
+    } else if (tipoGeradoRef.current !== tipoCava) {
+      // Já existem cavas neste turno (de outro tipo) e o usuário voltou e
+      // escolheu um tipo diferente — soma uma cava nova desse tipo em vez de
+      // apagar as anteriores (cada cava do turno pode ter seu próprio tipo).
+      const proximaCava = Math.max(...fotos.map((f) => f.cava)) + 1;
+      const fotosNovaCava = montarFotosParaCava(tipoCava, proximaCava);
+      tipoGeradoRef.current = tipoCava;
+      const novaLista = [...fotos, ...fotosNovaCava];
+      setFotos(novaLista);
+      persistirTurno(novaLista, tipoCava);
     }
 
     setPasso(5);
@@ -126,8 +136,9 @@ export default function WizardShell({ sessao, turnoInicial, passoInicial, onAbri
       return;
     }
     const cavaFechada = Math.max(...fotos.map((f) => f.cava));
+    const tipoDaCavaFechada = fotos.find((f) => f.cava === cavaFechada)?.tipoCava ?? dados.tipoCava;
     persistirTurno(fotos);
-    processarCavaEmSegundoPlano(cavaFechada, fotos);
+    processarCavaEmSegundoPlano(tipoDaCavaFechada, cavaFechada, fotos);
     setPasso(6);
   }
 
@@ -138,7 +149,8 @@ export default function WizardShell({ sessao, turnoInicial, passoInicial, onAbri
   // registrada. Faz merge por cava+fotoNum no estado (nunca substitui o
   // array inteiro), pra não sobrescrever uma cava nova que o usuário já
   // tenha começado enquanto isso ainda estava em andamento.
-  function processarCavaEmSegundoPlano(cava: number, fotosDaCava: FotoItem[]) {
+  function processarCavaEmSegundoPlano(tipoCava: string, cava: number, fotosDaCava: FotoItem[]) {
+    const chave = chaveCava(tipoCava, cava);
     const promessa = enviarFotosEmSegundoPlano(dados.obra, fotosDaCava).then(async (atualizadas) => {
       setFotos((atual) => {
         const mesclado = atual.map((f) => {
@@ -150,17 +162,17 @@ export default function WizardShell({ sessao, turnoInicial, passoInicial, onAbri
         return mesclado;
       });
 
-      if (cavasRegistradasRef.current.has(cava)) return;
+      if (cavasRegistradasRef.current.has(chave)) return;
       const fotosDaCavaAtualizadas = atualizadas.filter((f) => f.cava === cava);
       if (fotosDaCavaAtualizadas.length === 0 || !fotosDaCavaAtualizadas.every((f) => f.uploadedUrl)) return;
 
       const resultado = await registrarCava(
-        { data: dados.data, obra: dados.obra, tipoCava: dados.tipoCava, operador: sessao.nome, cpf: sessao.cpf, turnoServerId: serverIdRef.current },
+        { data: dados.data, obra: dados.obra, tipoCava, operador: sessao.nome, cpf: sessao.cpf, turnoServerId: serverIdRef.current },
         fotosDaCavaAtualizadas
       );
       if (resultado.sucesso) {
-        cavasRegistradasRef.current.add(cava);
-        if (turnoIdRef.current) await marcarCavaRegistrada(turnoIdRef.current, cava);
+        cavasRegistradasRef.current.add(chave);
+        if (turnoIdRef.current) await marcarCavaRegistrada(turnoIdRef.current, chave);
       }
     });
 

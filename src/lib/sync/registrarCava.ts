@@ -1,5 +1,12 @@
 import type { FotoItem } from "@/types";
 
+// Chave de controle de "essa cava já foi registrada" — precisa incluir o
+// tipo, não só o número, porque a numeração da cava reinicia em 1 sempre que
+// o tipo muda no meio do turno (ex: cava 1 Rocha, depois cava 1 Normal).
+export function chaveCava(tipoCava: string, cava: number): string {
+  return `${tipoCava}#${cava}`;
+}
+
 export interface DadosCavaParaRegistro {
   data: string;
   obra: string;

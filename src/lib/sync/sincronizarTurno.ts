@@ -1,6 +1,6 @@
 import { salvarTurno, type TurnoRegistro } from "@/lib/idb/turnosDb";
 import { enviarFotoComTimeout } from "./enviarFotoComTimeout";
-import { registrarCava } from "./registrarCava";
+import { registrarCava, chaveCava } from "./registrarCava";
 import { encerrarTurnoNoServidor } from "./turnosServidor";
 
 export interface ResultadoSync {
@@ -8,12 +8,21 @@ export interface ResultadoSync {
   erro?: string;
 }
 
-function agruparPorCava(fotos: TurnoRegistro["fotos"]): Map<number, TurnoRegistro["fotos"]> {
-  const porCava = new Map<number, TurnoRegistro["fotos"]>();
+interface GrupoCava {
+  cava: number;
+  tipoCava: string;
+  fotos: TurnoRegistro["fotos"];
+}
+
+// Agrupa por tipo+cava, não só por número — a numeração da cava reinicia em 1
+// sempre que o tipo muda no meio do turno (ver WizardShell.selecionarTipoEAvancar).
+function agruparPorCava(fotos: TurnoRegistro["fotos"]): Map<string, GrupoCava> {
+  const porCava = new Map<string, GrupoCava>();
   for (const foto of fotos) {
-    const lista = porCava.get(foto.cava) ?? [];
-    lista.push(foto);
-    porCava.set(foto.cava, lista);
+    const chave = chaveCava(foto.tipoCava, foto.cava);
+    const grupo = porCava.get(chave) ?? { cava: foto.cava, tipoCava: foto.tipoCava, fotos: [] };
+    grupo.fotos.push(foto);
+    porCava.set(chave, grupo);
   }
   return porCava;
 }
@@ -74,23 +83,26 @@ export async function sincronizarTurno(
   const cavasRegistradas = new Set(turno.cavasRegistradas ?? []);
   const porCava = agruparPorCava(fotos);
 
-  for (const [cava, fotosCava] of porCava) {
-    if (cavasRegistradas.has(cava)) continue;
+  for (const [chave, grupo] of porCava) {
+    if (cavasRegistradas.has(chave)) continue;
     const resultado = await registrarCava(
       {
         data: turno.data,
         obra: turno.obra,
-        tipoCava: turno.tipoCava,
+        tipoCava: grupo.tipoCava,
         operador: turno.operador,
         cpf: turno.cpf,
         turnoServerId: turno.serverId,
       },
-      fotosCava
+      grupo.fotos
     );
     if (!resultado.sucesso) {
-      return { sucesso: false, erro: resultado.erro || `Falha ao registrar a cava ${cava}. Toque em Sincronizar de novo.` };
+      return {
+        sucesso: false,
+        erro: resultado.erro || `Falha ao registrar a cava ${grupo.cava} (${grupo.tipoCava}). Toque em Sincronizar de novo.`,
+      };
     }
-    cavasRegistradas.add(cava);
+    cavasRegistradas.add(chave);
     try {
       await salvarTurno({ ...turno, fotos, cavasRegistradas: [...cavasRegistradas], id: turno.id });
     } catch {

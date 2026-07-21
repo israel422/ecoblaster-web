@@ -6,5 +6,5 @@ import type { FotoItem } from "@/types";
 // adicionar outra cava ao mesmo turno, chama de novo com o próximo número.
 export function montarFotosParaCava(tipoCava: string, cava: number): FotoItem[] {
   const config = FOTOS_CONFIG[tipoCava] || [];
-  return config.map((label, i) => ({ cava, fotoNum: i + 1, label }));
+  return config.map((label, i) => ({ cava, tipoCava, fotoNum: i + 1, label }));
 }
