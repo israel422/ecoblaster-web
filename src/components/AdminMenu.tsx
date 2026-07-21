@@ -10,6 +10,7 @@ interface Props {
   onPainelFotos: () => void;
   onPainelIndicadores: () => void;
   onGerenciarObras: () => void;
+  onRelatorioTurnos: () => void;
 }
 
 export default function AdminMenu({
@@ -19,6 +20,7 @@ export default function AdminMenu({
   onPainelFotos,
   onPainelIndicadores,
   onGerenciarObras,
+  onRelatorioTurnos,
 }: Props) {
   const [ativas, setAtivas] = useState(false);
   const [mensagem, setMensagem] = useState<string | null>(null);
@@ -59,6 +61,9 @@ export default function AdminMenu({
         </button>
         <button type="button" className="btn-avancar" style={{ width: "100%", marginBottom: 14 }} onClick={onGerenciarObras}>
           🏗️ Obras
+        </button>
+        <button type="button" className="btn-avancar" style={{ width: "100%", marginBottom: 14 }} onClick={onRelatorioTurnos}>
+          📋 Relatório de Turnos
         </button>
         <button type="button" className="btn-avancar" style={{ width: "100%" }} onClick={ativar} disabled={ativas}>
           {ativas ? "🔔 Notificações ativadas" : "🔔 Ativar notificações"}

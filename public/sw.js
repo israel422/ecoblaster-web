@@ -28,9 +28,12 @@ self.addEventListener("notificationclick", (event) => {
   event.notification.close();
   const url = event.notification.data?.url || "/";
   event.waitUntil(
-    self.clients.matchAll({ type: "window" }).then((clients) => {
+    self.clients.matchAll({ type: "window" }).then(async (clients) => {
       for (const client of clients) {
-        if (client.url.includes(self.location.origin) && "focus" in client) return client.focus();
+        if (client.url.includes(self.location.origin) && "focus" in client) {
+          if ("navigate" in client) await client.navigate(url);
+          return client.focus();
+        }
       }
       return self.clients.openWindow(url);
     })

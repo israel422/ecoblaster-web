@@ -10,6 +10,7 @@ import AdminMenu from "@/components/AdminMenu";
 import PainelFotos from "@/components/painel/PainelFotos";
 import PainelIndicadores from "@/components/painel/PainelIndicadores";
 import GerenciarObras from "@/components/painel/GerenciarObras";
+import RelatorioTurnos from "@/components/painel/RelatorioTurnos";
 import type { SessaoOperador } from "@/types";
 import type { TurnoRegistro } from "@/lib/idb/turnosDb";
 import { turnoCompleto } from "@/lib/idb/turnosDb";
@@ -17,7 +18,7 @@ import { obterTurnosParaExibir } from "@/lib/turnos/obterTurnosParaExibir";
 
 export default function Home() {
   const [sessao, setSessao] = useState<SessaoOperador | null>(null);
-  const [telaAdmin, setTelaAdmin] = useState<"menu" | "fotos" | "indicadores" | "obras" | null>(null);
+  const [telaAdmin, setTelaAdmin] = useState<"menu" | "fotos" | "indicadores" | "obras" | "relatorio" | null>(null);
   const [mostrarTurnos, setMostrarTurnos] = useState(false);
   const [turnoInicial, setTurnoInicial] = useState<TurnoRegistro | null>(null);
   const [passoInicial, setPassoInicial] = useState(1);
@@ -27,7 +28,8 @@ export default function Home() {
   function handleLogin(s: SessaoOperador) {
     setSessao(s);
     if (s.admin) {
-      setTelaAdmin("menu");
+      const params = new URLSearchParams(window.location.search);
+      setTelaAdmin(params.get("tela") === "relatorio-turnos" ? "relatorio" : "menu");
     } else {
       setMostrarTurnos(true);
     }
@@ -86,7 +88,11 @@ export default function Home() {
           onPainelFotos={() => setTelaAdmin("fotos")}
           onPainelIndicadores={() => setTelaAdmin("indicadores")}
           onGerenciarObras={() => setTelaAdmin("obras")}
+          onRelatorioTurnos={() => setTelaAdmin("relatorio")}
         />
+      )}
+      {sessao && sessao.admin && telaAdmin === "relatorio" && (
+        <RelatorioTurnos cpfAdmin={sessao.cpf} onVoltar={() => setTelaAdmin("menu")} />
       )}
       {sessao && sessao.admin && telaAdmin === "fotos" && (
         <PainelFotos cpfAdmin={sessao.cpf} onVoltar={() => setTelaAdmin("menu")} />
