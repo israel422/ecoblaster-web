@@ -12,7 +12,7 @@ export interface Operador {
 // "isAdmin" vindo do cliente sem checar aqui de novo.
 export const OPERADORES: Operador[] = [
   { cpf: "10284263486", nome: "LUIZ CARLOS DA SILVA SOBRINHO", categoria: "Compressor", admin: false },
-  { cpf: "04917892546", nome: "JOSSIEL MARTINS MESQUITA", categoria: "Compressor", admin: false },
+  { cpf: "04917892546", nome: "JOSSIEL MARTINS MESQUITA", categoria: "Blaster", admin: false },
   { cpf: "70690623461", nome: "GABRIEL FERREIRA DOS SANTOS", categoria: "Retroescavadeira", admin: false },
   { cpf: "02897981598", nome: "IRAILDO DA CRUZ REIS", categoria: "Retroescavadeira", admin: false },
   { cpf: "13579062425", nome: "JAILSON ALVES DA SILVA", categoria: "Retroescavadeira", admin: false },
