@@ -11,7 +11,6 @@ export interface Operador {
 // quanto no servidor (validação de admin nas rotas de API) — nunca confiar num
 // "isAdmin" vindo do cliente sem checar aqui de novo.
 export const OPERADORES: Operador[] = [
-  { cpf: "41278286845", nome: "LEONARDO MATOS DE OLIVEIRA", categoria: "Blaster", admin: false },
   { cpf: "10284263486", nome: "LUIZ CARLOS DA SILVA SOBRINHO", categoria: "Compressor", admin: false },
   { cpf: "04917892546", nome: "JOSSIEL MARTINS MESQUITA", categoria: "Compressor", admin: false },
   { cpf: "70690623461", nome: "GABRIEL FERREIRA DOS SANTOS", categoria: "Retroescavadeira", admin: false },

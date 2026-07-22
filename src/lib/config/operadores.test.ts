@@ -3,9 +3,9 @@ import { buscarOperador, isAdmin, OPERADORES } from "./operadores";
 
 describe("buscarOperador / isAdmin", () => {
   it("acha um operador existente pelo CPF", () => {
-    const op = buscarOperador("41278286845");
-    expect(op?.nome).toBe("LEONARDO MATOS DE OLIVEIRA");
-    expect(op?.categoria).toBe("Blaster");
+    const op = buscarOperador("07658074403");
+    expect(op?.nome).toBe("ANTONIO CARLOS DA SILVA");
+    expect(op?.categoria).toBe("Retroescavadeira");
   });
 
   it("retorna undefined pra CPF desconhecido", () => {
@@ -14,7 +14,7 @@ describe("buscarOperador / isAdmin", () => {
 
   it("só o Israel é admin", () => {
     expect(isAdmin("70239725441")).toBe(true);
-    expect(isAdmin("41278286845")).toBe(false);
+    expect(isAdmin("07658074403")).toBe(false);
     expect(isAdmin("00000000000")).toBe(false);
   });
 
