@@ -69,7 +69,6 @@ export default function WizardShell({ sessao, turnoInicial, passoInicial, onAbri
   const [erroFotos, setErroFotos] = useState(false);
 
   async function persistirTurno(fotosAtuais: FotoItem[], tipoCavaAtual?: string) {
-    const eraNovo = !turnoIdRef.current;
     const turno: TurnoRegistro = {
       id: turnoIdRef.current,
       serverId: serverIdRef.current,
@@ -88,7 +87,11 @@ export default function WizardShell({ sessao, turnoInicial, passoInicial, onAbri
     const id = await salvarTurno(turno);
     turnoIdRef.current = id;
 
-    if (eraNovo) {
+    // Tenta de novo em toda chamada enquanto não conseguir — antes só tentava
+    // na primeira vez (turno novo), e se desse falta de sinal bem nessa hora,
+    // o turno inteiro ficava sem marcação em turnos_abertos pra sempre (some
+    // do "Turnos em Aberto" e do relatório de quem abriu turno no dia).
+    if (!serverIdRef.current) {
       const serverId = await registrarTurnoAbertoNoServidor(sessao.cpf, dados.obra, dados.data);
       if (serverId) {
         serverIdRef.current = serverId;
