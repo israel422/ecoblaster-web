@@ -43,6 +43,11 @@ export const observacaoTurnoSchema = z.object({
   observacao: z.string().optional().default(""),
 });
 
+export const corrigirTipoCavaSchema = z.object({
+  cpf: z.string().regex(/^\d{11}$/),
+  tipoCava: z.string().min(1),
+});
+
 export const pushSubscriptionSchema = z.object({
   cpf: z.string().regex(/^\d{11}$/),
   endpoint: z.string().url(),

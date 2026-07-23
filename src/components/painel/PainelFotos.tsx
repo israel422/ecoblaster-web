@@ -1,14 +1,19 @@
 "use client";
 
-import { useEffect, useMemo, useState } from "react";
+import { Fragment, useEffect, useMemo, useState } from "react";
 import { TIPOS_CAVA } from "@/lib/config/tiposCava";
 import ConfirmModal from "@/components/ui/ConfirmModal";
 
-interface FotoRegistro {
+interface FotoRegistroBruta {
   cava: number;
   fotoNum: number;
   label: string;
   url: string;
+}
+
+interface FotoRegistro extends FotoRegistroBruta {
+  /** Id do registro (1 por cava) dono dessa foto — usado pra corrigir o tipo de uma cava específica. */
+  registroId: number;
 }
 
 interface RegistroLinha {
@@ -21,7 +26,7 @@ interface RegistroLinha {
   operador: string;
   cpf: string;
   observacao: string | null;
-  fotos: FotoRegistro[];
+  fotos: FotoRegistroBruta[];
   turnoId: string | null;
 }
 
@@ -51,6 +56,7 @@ function agruparRegistros(lista: RegistroLinha[]): GrupoRegistro[] {
     // se o operador mudou de tipo (ex: Cava em Rocha → Cava Normal) no meio
     // do dia, cada tipo aparece em linha separada, mesmo que compartilhem turnoId.
     const chave = `${r.turnoId ?? `solo-${r.id}`}::${r.tipoCava}`;
+    const fotosComRegistroId = r.fotos.map((f) => ({ ...f, registroId: r.id }));
     const atual = grupos.get(chave);
     if (!atual) {
       grupos.set(chave, {
@@ -64,12 +70,12 @@ function agruparRegistros(lista: RegistroLinha[]): GrupoRegistro[] {
         operador: r.operador,
         cpf: r.cpf,
         observacao: r.observacao,
-        fotos: [...r.fotos],
+        fotos: fotosComRegistroId,
       });
     } else {
       atual.ids.push(r.id);
       atual.totalCavas += r.totalCavas;
-      atual.fotos.push(...r.fotos);
+      atual.fotos.push(...fotosComRegistroId);
       if (!atual.observacao && r.observacao) atual.observacao = r.observacao;
       if (r.criadoEm > atual.criadoEm) atual.criadoEm = r.criadoEm;
     }
@@ -98,6 +104,11 @@ export default function PainelFotos({ cpfAdmin, onVoltar }: { cpfAdmin: string; 
   const [fotoAbertaIdx, setFotoAbertaIdx] = useState<number | null>(null);
   const [registroParaApagar, setRegistroParaApagar] = useState<GrupoRegistro | null>(null);
   const [apagando, setApagando] = useState(false);
+  const [cavaParaCorrigir, setCavaParaCorrigir] = useState<{ cava: number; registroId: number; tipoAtual: string } | null>(
+    null
+  );
+  const [novoTipo, setNovoTipo] = useState("");
+  const [corrigindo, setCorrigindo] = useState(false);
 
   const agrupados = useMemo(() => agruparRegistros(registrosLista), [registrosLista]);
 
@@ -169,6 +180,25 @@ export default function PainelFotos({ cpfAdmin, onVoltar }: { cpfAdmin: string; 
     }
     setApagando(false);
     setRegistroParaApagar(null);
+  }
+
+  async function salvarCorrecaoTipo() {
+    if (!cavaParaCorrigir || !novoTipo) return;
+    setCorrigindo(true);
+    const resp = await fetch(`/api/registros/${cavaParaCorrigir.registroId}`, {
+      method: "PATCH",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ cpf: cpfAdmin, tipoCava: novoTipo }),
+    });
+    if (resp.ok) {
+      // a cava corrigida muda de grupo (tipo mudou) — mais simples recarregar
+      // a lista toda do que tentar remendar o estado local
+      setCavaParaCorrigir(null);
+      setRegistroAberto(null);
+      setFotoAbertaIdx(null);
+      await carregar(filtros);
+    }
+    setCorrigindo(false);
   }
 
   function exportarCSV() {
@@ -360,30 +390,71 @@ export default function PainelFotos({ cpfAdmin, onVoltar }: { cpfAdmin: string; 
             </div>
             {registroAberto.observacao && <p style={{ color: "#666" }}>Obs: {registroAberto.observacao}</p>}
             <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fill, minmax(140px,1fr))", gap: 10, marginTop: 12 }}>
-              {registroAberto.fotos.map((f, i) => (
-                <div key={i}>
-                  <button
-                    type="button"
-                    onClick={() => setFotoAbertaIdx(i)}
-                    style={{ display: "block", width: "100%", padding: 0, border: "none", background: "none", cursor: "pointer" }}
-                  >
-                    {/* eslint-disable-next-line @next/next/no-img-element */}
-                    <img src={f.url} alt={f.label} style={{ width: "100%", borderRadius: 8, objectFit: "cover", aspectRatio: "1" }} />
-                  </button>
-                  <div style={{ fontSize: 11, color: "#888", marginTop: 4 }}>
-                    Cava {f.cava}: {f.label}
-                  </div>
-                  <button
-                    className="btn-voltar"
-                    style={{ marginTop: 4, padding: "6px 10px", fontSize: 12, width: "100%" }}
-                    onClick={() =>
-                      baixarFoto(f.url, `obra${registroAberto.obra}_cava${f.cava}_${f.label.replace(/[^a-zA-Z0-9]+/g, "_")}.jpg`)
-                    }
-                  >
-                    ⬇️ Baixar
-                  </button>
-                </div>
-              ))}
+              {(() => {
+                let cavaAnterior: number | null = null;
+                return registroAberto.fotos.map((f, i) => {
+                  const novaCava = f.cava !== cavaAnterior;
+                  cavaAnterior = f.cava;
+                  return (
+                    <Fragment key={i}>
+                      {novaCava && (
+                        <div
+                          style={{
+                            gridColumn: "1 / -1",
+                            display: "flex",
+                            justifyContent: "space-between",
+                            alignItems: "center",
+                            marginTop: i === 0 ? 0 : 10,
+                            paddingTop: i === 0 ? 0 : 10,
+                            borderTop: i === 0 ? "none" : "1px solid #eee",
+                          }}
+                        >
+                          <span style={{ fontWeight: 700, color: "#1B4FA2", fontSize: 14 }}>
+                            Cava {f.cava} — {registroAberto.tipoCava}
+                          </span>
+                          <button
+                            type="button"
+                            className="btn-voltar"
+                            style={{ padding: "4px 10px", fontSize: 12 }}
+                            onClick={() => {
+                              setNovoTipo("");
+                              setCavaParaCorrigir({ cava: f.cava, registroId: f.registroId, tipoAtual: registroAberto.tipoCava });
+                            }}
+                          >
+                            ✏️ Corrigir tipo
+                          </button>
+                        </div>
+                      )}
+                      <div key={i}>
+                        <button
+                          type="button"
+                          onClick={() => setFotoAbertaIdx(i)}
+                          style={{ display: "block", width: "100%", padding: 0, border: "none", background: "none", cursor: "pointer" }}
+                        >
+                          {/* eslint-disable-next-line @next/next/no-img-element */}
+                          <img
+                            src={f.url}
+                            alt={f.label}
+                            style={{ width: "100%", borderRadius: 8, objectFit: "cover", aspectRatio: "1" }}
+                          />
+                        </button>
+                        <div style={{ fontSize: 11, color: "#888", marginTop: 4 }}>
+                          Cava {f.cava}: {f.label}
+                        </div>
+                        <button
+                          className="btn-voltar"
+                          style={{ marginTop: 4, padding: "6px 10px", fontSize: 12, width: "100%" }}
+                          onClick={() =>
+                            baixarFoto(f.url, `obra${registroAberto.obra}_cava${f.cava}_${f.label.replace(/[^a-zA-Z0-9]+/g, "_")}.jpg`)
+                          }
+                        >
+                          ⬇️ Baixar
+                        </button>
+                      </div>
+                    </Fragment>
+                  );
+                });
+              })()}
             </div>
             <button className="btn-voltar" style={{ marginTop: 16 }} onClick={() => setRegistroAberto(null)}>
               Fechar
@@ -516,6 +587,63 @@ export default function PainelFotos({ cpfAdmin, onVoltar }: { cpfAdmin: string; 
           onConfirmar={apagarRegistroConfirmado}
           onCancelar={() => setRegistroParaApagar(null)}
         />
+      )}
+
+      {cavaParaCorrigir && (
+        <div
+          style={{
+            position: "fixed",
+            inset: 0,
+            background: "rgba(0,0,0,0.5)",
+            zIndex: 600,
+            display: "flex",
+            alignItems: "center",
+            justifyContent: "center",
+            padding: 20,
+          }}
+          onClick={() => setCavaParaCorrigir(null)}
+        >
+          <div
+            style={{ background: "#fff", borderRadius: 16, padding: 24, maxWidth: 360, width: "100%" }}
+            onClick={(e) => e.stopPropagation()}
+          >
+            <h3 style={{ color: "#1B4FA2", marginBottom: 4 }}>Corrigir tipo da cava {cavaParaCorrigir.cava}</h3>
+            <p style={{ color: "#666", fontSize: 13, marginBottom: 14 }}>
+              Tipo atual: <strong>{cavaParaCorrigir.tipoAtual}</strong>
+            </p>
+            <select
+              className="campo-grande"
+              style={{ width: "100%", padding: 12, marginBottom: 16 }}
+              value={novoTipo}
+              onChange={(e) => setNovoTipo(e.target.value)}
+            >
+              <option value="">Selecione o tipo certo...</option>
+              {TIPOS_CAVA.map((t) => (
+                <option key={t.id} value={t.id}>
+                  {t.emoji} {t.id}
+                </option>
+              ))}
+            </select>
+            <div style={{ display: "flex", gap: 8 }}>
+              <button
+                className="btn-voltar"
+                style={{ flex: 1, padding: 12 }}
+                onClick={() => setCavaParaCorrigir(null)}
+                disabled={corrigindo}
+              >
+                Cancelar
+              </button>
+              <button
+                className="btn-avancar"
+                style={{ flex: 1, padding: 12 }}
+                onClick={salvarCorrecaoTipo}
+                disabled={corrigindo || !novoTipo || novoTipo === cavaParaCorrigir.tipoAtual}
+              >
+                {corrigindo ? "Salvando..." : "Salvar"}
+              </button>
+            </div>
+          </div>
+        </div>
       )}
     </div>
   );
