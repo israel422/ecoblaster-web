@@ -1,6 +1,7 @@
 "use client";
 
 import { useState } from "react";
+import { TIPOS_CAVA } from "@/lib/config/tiposCava";
 
 interface RegistroLinha {
   id: number;
@@ -61,6 +62,86 @@ function GraficoBarras({ linhas }: { linhas: LinhaAgregada[] }) {
           </div>
         </div>
       ))}
+      {linhas.length === 0 && <p style={{ color: "#888" }}>Sem dados no período.</p>}
+    </div>
+  );
+}
+
+interface ObraPorTipo {
+  obra: string;
+  totalCavas: number;
+  porTipo: Record<string, number>;
+}
+
+function agregarObraPorTipo(lista: RegistroLinha[]): ObraPorTipo[] {
+  const mapa = new Map<string, ObraPorTipo>();
+  for (const r of lista) {
+    const atual = mapa.get(r.obra) || { obra: r.obra, totalCavas: 0, porTipo: {} };
+    atual.totalCavas += r.totalCavas;
+    atual.porTipo[r.tipoCava] = (atual.porTipo[r.tipoCava] || 0) + r.totalCavas;
+    mapa.set(r.obra, atual);
+  }
+  return Array.from(mapa.values()).sort((a, b) => b.totalCavas - a.totalCavas);
+}
+
+const CORES_TIPO: Record<string, string> = {
+  "Cava Normal": "#1a73e8",
+  "Cava em Rocha": "#e8710a",
+  Blaster: "#d93025",
+  Rompedor: "#795548",
+  "Cava Iniciada": "#9334e6",
+  "Cava Furada": "#12939a",
+  "Limpeza de Cava": "#1e8e3e",
+};
+
+function GraficoBarrasEmpilhadasPorTipo({ linhas }: { linhas: ObraPorTipo[] }) {
+  const max = Math.max(1, ...linhas.map((l) => l.totalCavas));
+  const tiposPresentes = TIPOS_CAVA.map((t) => t.id).filter((id) => linhas.some((l) => l.porTipo[id]));
+
+  return (
+    <div style={{ marginBottom: 16 }}>
+      <div style={{ display: "flex", flexWrap: "wrap", gap: 12, marginBottom: 12, fontSize: 12, color: "#444" }}>
+        {tiposPresentes.map((tipo) => (
+          <span key={tipo} style={{ display: "flex", alignItems: "center", gap: 4 }}>
+            <span style={{ width: 10, height: 10, borderRadius: 2, background: CORES_TIPO[tipo] ?? "#999", display: "inline-block" }} />
+            {tipo}
+          </span>
+        ))}
+      </div>
+      <div style={{ display: "flex", flexDirection: "column", gap: 8 }}>
+        {linhas.map((l) => (
+          <div key={l.obra} style={{ display: "flex", alignItems: "center", gap: 8 }}>
+            <div style={{ width: 140, fontSize: 12, color: "#444", textAlign: "right", flexShrink: 0, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>
+              {l.obra}
+            </div>
+            <div style={{ flex: 1, display: "flex", background: "#f0f4f8", borderRadius: 6, overflow: "hidden" }}>
+              {tiposPresentes.map((tipo) => {
+                const valor = l.porTipo[tipo] || 0;
+                if (!valor) return null;
+                return (
+                  <div
+                    key={tipo}
+                    title={`${tipo}: ${valor}`}
+                    style={{
+                      width: `${(valor / max) * 100}%`,
+                      background: CORES_TIPO[tipo] ?? "#999",
+                      color: "#fff",
+                      fontSize: 11,
+                      fontWeight: 700,
+                      padding: "6px 4px",
+                      whiteSpace: "nowrap",
+                      overflow: "hidden",
+                    }}
+                  >
+                    {valor}
+                  </div>
+                );
+              })}
+            </div>
+            <div style={{ width: 32, fontSize: 12, color: "#666", flexShrink: 0 }}>{l.totalCavas}</div>
+          </div>
+        ))}
+      </div>
       {linhas.length === 0 && <p style={{ color: "#888" }}>Sem dados no período.</p>}
     </div>
   );
@@ -178,7 +259,33 @@ export default function PainelIndicadores({ cpfAdmin, onVoltar }: { cpfAdmin: st
 
           <TabelaAgregada titulo="Por Operador" colunaChave="Operador" linhas={agregarPor(lista, "operador")} />
           <TabelaAgregada titulo="Por Tipo de Cava" colunaChave="Tipo de Cava" linhas={agregarPor(lista, "tipoCava")} />
-          <TabelaAgregada titulo="Por Obra" colunaChave="Obra" linhas={agregarPor(lista, "obra")} />
+
+          <div style={{ marginBottom: 28 }}>
+            <h3 style={{ color: "#1B4FA2", fontSize: 17, marginBottom: 8 }}>Por Obra</h3>
+            <GraficoBarrasEmpilhadasPorTipo linhas={agregarObraPorTipo(lista)} />
+            <div style={{ overflowX: "auto" }}>
+              <table style={{ width: "100%", borderCollapse: "collapse" }}>
+                <thead>
+                  <tr style={{ textAlign: "left", borderBottom: "2px solid #e0e0e0" }}>
+                    <th style={{ padding: 8 }}>Obra</th>
+                    <th style={{ padding: 8 }}>Registros</th>
+                    <th style={{ padding: 8 }}>Cavas</th>
+                    <th style={{ padding: 8 }}>Fotos</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {agregarPor(lista, "obra").map((l) => (
+                    <tr key={l.chave} style={{ borderBottom: "1px solid #eee" }}>
+                      <td style={{ padding: 8 }}>{l.chave}</td>
+                      <td style={{ padding: 8 }}>{l.registros}</td>
+                      <td style={{ padding: 8 }}>{l.cavas}</td>
+                      <td style={{ padding: 8 }}>{l.fotos}</td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
+          </div>
         </>
       )}
 
