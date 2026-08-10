@@ -1,6 +1,7 @@
 import { NextResponse } from "next/server";
 import { eq } from "drizzle-orm";
 import { del } from "@vercel/blob";
+import { cloudinary, publicIdFromCloudinaryUrl } from "@/lib/cloudinary/cloudinaryClient";
 import { db } from "@/lib/db/client";
 import { registros } from "@/lib/db/schema";
 import { isAdmin } from "@/lib/config/operadores";
@@ -59,12 +60,25 @@ export async function DELETE(req: Request, { params }: { params: Promise<{ id: s
 
   await db.delete(registros).where(eq(registros.id, idNum));
 
+  // Registros antigos têm fotos no Vercel Blob, registros novos no Cloudinary
+  // (trocado em 2026-08-10) — apaga cada um pelo mecanismo certo, best-effort.
   const urls = (registro.fotos as { url?: string }[]).map((f) => f.url).filter((u): u is string => !!u);
-  if (urls.length > 0) {
+  const urlsBlob = urls.filter((u) => u.includes(".blob.vercel-storage.com"));
+  const urlsCloudinary = urls.filter((u) => u.includes("res.cloudinary.com"));
+
+  if (urlsBlob.length > 0) {
     try {
-      await del(urls);
+      await del(urlsBlob);
     } catch (err) {
       console.error("Registro apagado, mas falhou ao apagar fotos do Blob:", err);
+    }
+  }
+  if (urlsCloudinary.length > 0) {
+    const publicIds = urlsCloudinary.map(publicIdFromCloudinaryUrl).filter((id): id is string => !!id);
+    try {
+      await cloudinary.api.delete_resources(publicIds);
+    } catch (err) {
+      console.error("Registro apagado, mas falhou ao apagar fotos do Cloudinary:", err);
     }
   }
 
