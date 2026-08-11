@@ -14,6 +14,8 @@ export default function GerenciarObras({ cpfAdmin, onVoltar }: Props) {
   const [codigo, setCodigo] = useState("");
   const [salvando, setSalvando] = useState(false);
   const [erro, setErro] = useState<string | null>(null);
+  const [lote, setLote] = useState("");
+  const [resultadoLote, setResultadoLote] = useState<string | null>(null);
 
   async function carregar() {
     const lista = await atualizarObrasExtraCache();
@@ -41,6 +43,36 @@ export default function GerenciarObras({ cpfAdmin, onVoltar }: Props) {
         return;
       }
       setCodigo("");
+      await carregar();
+    } catch {
+      setErro("Sem conexão. Tente de novo quando tiver internet.");
+    } finally {
+      setSalvando(false);
+    }
+  }
+
+  async function adicionarLote() {
+    const codigos = lote
+      .split(/[\s,;]+/)
+      .map((c) => c.trim())
+      .filter(Boolean);
+    if (codigos.length === 0) return;
+    setSalvando(true);
+    setErro(null);
+    setResultadoLote(null);
+    try {
+      const resp = await fetch("/api/obras/lote", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ codigos, cpf: cpfAdmin }),
+      });
+      const json = await resp.json().catch(() => ({}) as { erro?: string; adicionadas?: number; ignoradas?: number });
+      if (!resp.ok) {
+        setErro(json.erro || "Erro ao adicionar a lista.");
+        return;
+      }
+      setResultadoLote(`${json.adicionadas} obra(s) adicionada(s), ${json.ignoradas} já existiam.`);
+      setLote("");
       await carregar();
     } catch {
       setErro("Sem conexão. Tente de novo quando tiver internet.");
@@ -92,6 +124,28 @@ export default function GerenciarObras({ cpfAdmin, onVoltar }: Props) {
         </button>
       </div>
       {erro && <div className="erro-inline">{erro}</div>}
+
+      <div style={{ marginTop: 20, paddingTop: 20, borderTop: "1px solid #e8ecf0" }}>
+        <div className="passo-sub" style={{ marginBottom: 8 }}>
+          Ou cole a lista de todas as obras do mês (uma por linha, ou separadas por vírgula/espaço):
+        </div>
+        <textarea
+          className="campo-grande"
+          style={{ width: "100%", minHeight: 100, resize: "vertical" }}
+          placeholder={"467379\n463880\n462369\n..."}
+          value={lote}
+          onChange={(e) => setLote(e.target.value)}
+        />
+        <button
+          className="btn-avancar"
+          style={{ marginTop: 8 }}
+          disabled={salvando || !lote.trim()}
+          onClick={adicionarLote}
+        >
+          + Adicionar lista
+        </button>
+        {resultadoLote && <div style={{ marginTop: 8, color: "#1e8e3e", fontSize: 13 }}>{resultadoLote}</div>}
+      </div>
 
       <div style={{ marginTop: 20 }}>
         {lista === null && <div style={{ color: "#888" }}>Carregando...</div>}

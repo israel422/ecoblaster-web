@@ -38,6 +38,11 @@ export const novaObraSchema = z.object({
   cpf: z.string().regex(/^\d{11}$/),
 });
 
+export const novasObrasLoteSchema = z.object({
+  codigos: z.array(z.string().trim().min(1).max(30)).min(1).max(1000),
+  cpf: z.string().regex(/^\d{11}$/),
+});
+
 export const observacaoTurnoSchema = z.object({
   cpf: z.string().regex(/^\d{11}$/),
   observacao: z.string().optional().default(""),
