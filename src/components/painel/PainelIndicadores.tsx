@@ -2,6 +2,7 @@
 
 import { useState } from "react";
 import { TIPOS_CAVA } from "@/lib/config/tiposCava";
+import { OPERADORES } from "@/lib/config/operadores";
 
 interface RegistroLinha {
   id: number;
@@ -242,11 +243,116 @@ function TabelaAgregada({ titulo, colunaChave, linhas }: { titulo: string; colun
   );
 }
 
+const OPERADORES_CAMPO = OPERADORES.filter((o) => !o.admin).sort((a, b) => a.nome.localeCompare(b.nome));
+
+function diasNoIntervalo(inicio: string, fim: string): string[] {
+  const dias: string[] = [];
+  let atual = new Date(`${inicio}T00:00:00Z`);
+  const limite = new Date(`${fim}T00:00:00Z`);
+  while (atual <= limite) {
+    dias.push(atual.toISOString().slice(0, 10));
+    atual = new Date(atual.getTime() + 86400000);
+  }
+  return dias;
+}
+
+function formatarDataCurta(iso: string): string {
+  const [, mes, dia] = iso.split("-");
+  return `${dia}/${mes}`;
+}
+
+function TabelaFrequencia({ lista, dataInicio, dataFim }: { lista: RegistroLinha[]; dataInicio: string; dataFim: string }) {
+  if (!dataInicio || !dataFim) {
+    return <p style={{ color: "#888" }}>Escolha as datas &quot;De&quot; e &quot;Até&quot; acima e toque em Buscar pra ver esse relatório.</p>;
+  }
+
+  const dias = diasNoIntervalo(dataInicio, dataFim);
+
+  const porDia = new Map<string, Set<string>>();
+  for (const dia of dias) porDia.set(dia, new Set());
+  for (const r of lista) {
+    if (porDia.has(r.data)) porDia.get(r.data)!.add(r.operador);
+  }
+
+  const diasSemLancarPorOperador = OPERADORES_CAMPO.map((op) => {
+    const diasSemLancar = dias.filter((dia) => !porDia.get(dia)?.has(op.nome));
+    return { operador: op.nome, diasSemLancar: diasSemLancar.length, totalDias: dias.length };
+  }).sort((a, b) => b.diasSemLancar - a.diasSemLancar);
+
+  return (
+    <div>
+      <div style={{ marginBottom: 28 }}>
+        <h3 style={{ color: "#1B4FA2", fontSize: 17, marginBottom: 8 }}>Resumo — dias sem lançamento</h3>
+        <p style={{ fontSize: 13, color: "#666", marginBottom: 8 }}>
+          De {dias.length} dia(s) no período, quantos cada operador ficou sem lançar nenhum registro.
+        </p>
+        <div style={{ overflowX: "auto" }}>
+          <table style={{ width: "100%", borderCollapse: "collapse" }}>
+            <thead>
+              <tr style={{ textAlign: "left", borderBottom: "2px solid #e0e0e0" }}>
+                <th style={{ padding: 8 }}>Operador</th>
+                <th style={{ padding: 8 }}>Dias sem lançar</th>
+                <th style={{ padding: 8 }}>Dias com lançamento</th>
+              </tr>
+            </thead>
+            <tbody>
+              {diasSemLancarPorOperador.map((o) => (
+                <tr key={o.operador} style={{ borderBottom: "1px solid #eee" }}>
+                  <td style={{ padding: 8 }}>{o.operador}</td>
+                  <td style={{ padding: 8, fontWeight: 700, color: o.diasSemLancar > 0 ? "#d93025" : "#1e8e3e" }}>
+                    {o.diasSemLancar}
+                  </td>
+                  <td style={{ padding: 8 }}>{o.totalDias - o.diasSemLancar}</td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        </div>
+      </div>
+
+      <div style={{ marginBottom: 28 }}>
+        <h3 style={{ color: "#1B4FA2", fontSize: 17, marginBottom: 8 }}>Dia a dia</h3>
+        <p style={{ fontSize: 13, color: "#666", marginBottom: 8 }}>✓ lançou pelo menos um registro naquele dia · — não lançou.</p>
+        <div style={{ overflowX: "auto" }}>
+          <table style={{ width: "100%", borderCollapse: "collapse" }}>
+            <thead>
+              <tr style={{ textAlign: "left", borderBottom: "2px solid #e0e0e0" }}>
+                <th style={{ padding: 8 }}>Data</th>
+                {OPERADORES_CAMPO.map((op) => (
+                  <th key={op.cpf} style={{ padding: 8, fontSize: 11, whiteSpace: "nowrap" }}>
+                    {op.nome.split(" ").slice(0, 2).join(" ")}
+                  </th>
+                ))}
+              </tr>
+            </thead>
+            <tbody>
+              {dias.map((dia) => (
+                <tr key={dia} style={{ borderBottom: "1px solid #eee" }}>
+                  <td style={{ padding: 8, whiteSpace: "nowrap" }}>{formatarDataCurta(dia)}</td>
+                  {OPERADORES_CAMPO.map((op) => {
+                    const lancou = porDia.get(dia)?.has(op.nome);
+                    return (
+                      <td key={op.cpf} style={{ padding: 8, textAlign: "center", color: lancou ? "#1e8e3e" : "#d93025", fontWeight: 700 }}>
+                        {lancou ? "✓" : "—"}
+                      </td>
+                    );
+                  })}
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        </div>
+      </div>
+    </div>
+  );
+}
+
 export default function PainelIndicadores({ cpfAdmin, onVoltar }: { cpfAdmin: string; onVoltar?: () => void }) {
   const [dataInicio, setDataInicio] = useState("");
   const [dataFim, setDataFim] = useState("");
   const [carregando, setCarregando] = useState(false);
   const [lista, setLista] = useState<RegistroLinha[] | null>(null);
+  const [aba, setAba] = useState<"indicadores" | "frequencia">("indicadores");
 
   async function buscar() {
     setCarregando(true);
@@ -302,9 +408,46 @@ export default function PainelIndicadores({ cpfAdmin, onVoltar }: { cpfAdmin: st
         </button>
       </div>
 
+      <div style={{ display: "flex", gap: 8, marginBottom: 20, borderBottom: "1px solid #e0e0e0" }}>
+        <button
+          onClick={() => setAba("indicadores")}
+          style={{
+            padding: "10px 16px",
+            border: "none",
+            background: "none",
+            cursor: "pointer",
+            fontSize: 14,
+            fontWeight: 700,
+            color: aba === "indicadores" ? "#1B4FA2" : "#888",
+            borderBottom: aba === "indicadores" ? "3px solid #1B4FA2" : "3px solid transparent",
+          }}
+        >
+          Indicadores
+        </button>
+        <button
+          onClick={() => setAba("frequencia")}
+          style={{
+            padding: "10px 16px",
+            border: "none",
+            background: "none",
+            cursor: "pointer",
+            fontSize: 14,
+            fontWeight: 700,
+            color: aba === "frequencia" ? "#1B4FA2" : "#888",
+            borderBottom: aba === "frequencia" ? "3px solid #1B4FA2" : "3px solid transparent",
+          }}
+        >
+          Frequência
+        </button>
+      </div>
+
       {carregando && <p>Carregando...</p>}
 
-      {lista && !carregando && (
+      {lista && !carregando && aba === "frequencia" && (
+        <TabelaFrequencia lista={lista} dataInicio={dataInicio} dataFim={dataFim} />
+      )}
+
+      {lista && !carregando && aba === "indicadores" && (
         <>
           <div style={{ display: "flex", gap: 16, marginBottom: 28, flexWrap: "wrap" }}>
             <div className="operador-card" style={{ flex: "1 1 140px" }}>
