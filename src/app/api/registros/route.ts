@@ -27,8 +27,8 @@ export async function GET(req: Request) {
 
   const resultado =
     condicoes.length > 0
-      ? await db.select().from(registros).where(and(...condicoes)).orderBy(desc(registros.criadoEm)).limit(300)
-      : await db.select().from(registros).orderBy(desc(registros.criadoEm)).limit(300);
+      ? await db.select().from(registros).where(and(...condicoes)).orderBy(desc(registros.criadoEm))
+      : await db.select().from(registros).orderBy(desc(registros.criadoEm));
 
   return NextResponse.json(resultado);
 }
