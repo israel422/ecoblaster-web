@@ -84,6 +84,31 @@ function agregarObraPorTipo(lista: RegistroLinha[]): ObraPorTipo[] {
   return Array.from(mapa.values()).sort((a, b) => b.totalCavas - a.totalCavas);
 }
 
+interface MediaObra {
+  obra: string;
+  totalCavas: number;
+  dias: number;
+  mediaPorDia: number;
+}
+
+function agregarMediaCavaPorObra(lista: RegistroLinha[]): MediaObra[] {
+  const mapa = new Map<string, { totalCavas: number; dias: Set<string> }>();
+  for (const r of lista) {
+    const atual = mapa.get(r.obra) || { totalCavas: 0, dias: new Set<string>() };
+    atual.totalCavas += r.totalCavas;
+    atual.dias.add(r.data);
+    mapa.set(r.obra, atual);
+  }
+  return Array.from(mapa.entries())
+    .map(([obra, v]) => ({
+      obra,
+      totalCavas: v.totalCavas,
+      dias: v.dias.size,
+      mediaPorDia: v.dias.size > 0 ? v.totalCavas / v.dias.size : 0,
+    }))
+    .sort((a, b) => b.mediaPorDia - a.mediaPorDia);
+}
+
 const CORES_TIPO: Record<string, string> = {
   "Cava Normal": "#1a73e8",
   "Cava em Rocha": "#e8710a",
@@ -282,6 +307,42 @@ export default function PainelIndicadores({ cpfAdmin, onVoltar }: { cpfAdmin: st
                       <td style={{ padding: 8 }}>{l.fotos}</td>
                     </tr>
                   ))}
+                </tbody>
+              </table>
+            </div>
+          </div>
+
+          <div style={{ marginBottom: 28 }}>
+            <h3 style={{ color: "#1B4FA2", fontSize: 17, marginBottom: 8 }}>Média de Cavas por Obra</h3>
+            <p style={{ fontSize: 13, color: "#666", marginBottom: 8 }}>
+              Total de cavas dividido pelos dias com registro em cada obra, no período selecionado.
+            </p>
+            <div style={{ overflowX: "auto" }}>
+              <table style={{ width: "100%", borderCollapse: "collapse" }}>
+                <thead>
+                  <tr style={{ textAlign: "left", borderBottom: "2px solid #e0e0e0" }}>
+                    <th style={{ padding: 8 }}>Obra</th>
+                    <th style={{ padding: 8 }}>Cavas</th>
+                    <th style={{ padding: 8 }}>Dias trabalhados</th>
+                    <th style={{ padding: 8 }}>Média de cavas/dia</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {agregarMediaCavaPorObra(lista).map((l) => (
+                    <tr key={l.obra} style={{ borderBottom: "1px solid #eee" }}>
+                      <td style={{ padding: 8 }}>{l.obra}</td>
+                      <td style={{ padding: 8 }}>{l.totalCavas}</td>
+                      <td style={{ padding: 8 }}>{l.dias}</td>
+                      <td style={{ padding: 8, fontWeight: 700 }}>{l.mediaPorDia.toFixed(1)}</td>
+                    </tr>
+                  ))}
+                  {lista.length === 0 && (
+                    <tr>
+                      <td style={{ padding: 8 }} colSpan={4}>
+                        Sem dados no período.
+                      </td>
+                    </tr>
+                  )}
                 </tbody>
               </table>
             </div>
