@@ -42,7 +42,7 @@ function GraficoBarras({ linhas }: { linhas: LinhaAgregada[] }) {
     <div style={{ display: "flex", flexDirection: "column", gap: 8, marginBottom: 16 }}>
       {linhas.map((l, i) => (
         <div key={l.chave} style={{ display: "flex", alignItems: "center", gap: 8 }}>
-          <div style={{ width: 140, fontSize: 12, color: "#444", textAlign: "right", flexShrink: 0, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>
+          <div style={{ width: 180, fontSize: 12, color: "#444", textAlign: "right", flexShrink: 0 }}>
             {l.chave}
           </div>
           <div style={{ flex: 1, background: "#f0f4f8", borderRadius: 6, overflow: "hidden" }}>
