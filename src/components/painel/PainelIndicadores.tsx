@@ -341,8 +341,31 @@ function TabelaFrequencia({
     };
   }).sort((a, b) => b.semJustificativa - a.semJustificativa);
 
+  const totalDiasSemLancar = resumoPorOperador.reduce((soma, o) => soma + o.diasSemLancar, 0);
+  const totalSemJustificativa = resumoPorOperador.reduce((soma, o) => soma + o.semJustificativa, 0);
+  const totalJustificado = totalDiasSemLancar - totalSemJustificativa;
+
   return (
     <div>
+      <div style={{ display: "flex", gap: 16, marginBottom: 28, flexWrap: "wrap" }}>
+        <div className="operador-card" style={{ flex: "1 1 140px" }}>
+          <div className="operador-nome">{totalDiasSemLancar}</div>
+          <div className="operador-label">Dias sem lançamento (soma)</div>
+        </div>
+        <div className="operador-card" style={{ flex: "1 1 140px" }}>
+          <div className="operador-nome" style={{ color: "#d93025" }}>
+            {totalSemJustificativa}
+          </div>
+          <div className="operador-label">Sem justificativa</div>
+        </div>
+        <div className="operador-card" style={{ flex: "1 1 140px" }}>
+          <div className="operador-nome" style={{ color: "#1e8e3e" }}>
+            {totalJustificado}
+          </div>
+          <div className="operador-label">Justificados</div>
+        </div>
+      </div>
+
       <div style={{ marginBottom: 28 }}>
         <h3 style={{ color: "#1B4FA2", fontSize: 17, marginBottom: 8 }}>Resumo — dias sem lançamento</h3>
         <p style={{ fontSize: 13, color: "#666", marginBottom: 8 }}>
