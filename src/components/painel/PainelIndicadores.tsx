@@ -1,8 +1,9 @@
 "use client";
 
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { TIPOS_CAVA } from "@/lib/config/tiposCava";
 import { OPERADORES } from "@/lib/config/operadores";
+import { MOTIVOS_JUSTIFICATIVA } from "@/lib/config/motivosJustificativa";
 
 interface RegistroLinha {
   id: number;
@@ -261,7 +262,62 @@ function formatarDataCurta(iso: string): string {
   return `${dia}/${mes}`;
 }
 
-function TabelaFrequencia({ lista, dataInicio, dataFim }: { lista: RegistroLinha[]; dataInicio: string; dataFim: string }) {
+interface Justificativa {
+  cpf: string;
+  operador: string;
+  data: string;
+  motivo: string;
+}
+
+function chaveJust(cpf: string, data: string) {
+  return `${cpf}|${data}`;
+}
+
+function TabelaFrequencia({
+  lista,
+  dataInicio,
+  dataFim,
+  cpfAdmin,
+}: {
+  lista: RegistroLinha[];
+  dataInicio: string;
+  dataFim: string;
+  cpfAdmin: string;
+}) {
+  const [justificativas, setJustificativas] = useState<Record<string, string>>({});
+  const [carregandoJust, setCarregandoJust] = useState(false);
+
+  useEffect(() => {
+    if (!dataInicio || !dataFim) return;
+    let cancelado = false;
+
+    async function carregar() {
+      setCarregandoJust(true);
+      const params = new URLSearchParams({ cpf: cpfAdmin, dataInicio, dataFim });
+      const resp = await fetch(`/api/justificativas?${params.toString()}`);
+      const lista: Justificativa[] = resp.ok ? await resp.json() : [];
+      if (cancelado) return;
+      const mapa: Record<string, string> = {};
+      for (const j of lista) mapa[chaveJust(j.cpf, j.data)] = j.motivo;
+      setJustificativas(mapa);
+      setCarregandoJust(false);
+    }
+
+    carregar();
+    return () => {
+      cancelado = true;
+    };
+  }, [dataInicio, dataFim, cpfAdmin]);
+
+  async function salvarJustificativa(operadorCpf: string, data: string, motivo: string) {
+    setJustificativas((atual) => ({ ...atual, [chaveJust(operadorCpf, data)]: motivo }));
+    await fetch("/api/justificativas", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ cpf: cpfAdmin, operadorCpf, data, motivo }),
+    });
+  }
+
   if (!dataInicio || !dataFim) {
     return <p style={{ color: "#888" }}>Escolha as datas &quot;De&quot; e &quot;Até&quot; acima e toque em Buscar pra ver esse relatório.</p>;
   }
@@ -274,17 +330,24 @@ function TabelaFrequencia({ lista, dataInicio, dataFim }: { lista: RegistroLinha
     if (porDia.has(r.data)) porDia.get(r.data)!.add(r.operador);
   }
 
-  const diasSemLancarPorOperador = OPERADORES_CAMPO.map((op) => {
+  const resumoPorOperador = OPERADORES_CAMPO.map((op) => {
     const diasSemLancar = dias.filter((dia) => !porDia.get(dia)?.has(op.nome));
-    return { operador: op.nome, diasSemLancar: diasSemLancar.length, totalDias: dias.length };
-  }).sort((a, b) => b.diasSemLancar - a.diasSemLancar);
+    const semJustificativa = diasSemLancar.filter((dia) => !justificativas[chaveJust(op.cpf, dia)]);
+    return {
+      operador: op.nome,
+      diasSemLancar: diasSemLancar.length,
+      semJustificativa: semJustificativa.length,
+      totalDias: dias.length,
+    };
+  }).sort((a, b) => b.semJustificativa - a.semJustificativa);
 
   return (
     <div>
       <div style={{ marginBottom: 28 }}>
         <h3 style={{ color: "#1B4FA2", fontSize: 17, marginBottom: 8 }}>Resumo — dias sem lançamento</h3>
         <p style={{ fontSize: 13, color: "#666", marginBottom: 8 }}>
-          De {dias.length} dia(s) no período, quantos cada operador ficou sem lançar nenhum registro.
+          De {dias.length} dia(s) no período, quantos cada operador ficou sem lançar nenhum registro — e quantos
+          desses ainda não têm justificativa.
         </p>
         <div style={{ overflowX: "auto" }}>
           <table style={{ width: "100%", borderCollapse: "collapse" }}>
@@ -292,15 +355,17 @@ function TabelaFrequencia({ lista, dataInicio, dataFim }: { lista: RegistroLinha
               <tr style={{ textAlign: "left", borderBottom: "2px solid #e0e0e0" }}>
                 <th style={{ padding: 8 }}>Operador</th>
                 <th style={{ padding: 8 }}>Dias sem lançar</th>
+                <th style={{ padding: 8 }}>Sem justificativa</th>
                 <th style={{ padding: 8 }}>Dias com lançamento</th>
               </tr>
             </thead>
             <tbody>
-              {diasSemLancarPorOperador.map((o) => (
+              {resumoPorOperador.map((o) => (
                 <tr key={o.operador} style={{ borderBottom: "1px solid #eee" }}>
                   <td style={{ padding: 8 }}>{o.operador}</td>
-                  <td style={{ padding: 8, fontWeight: 700, color: o.diasSemLancar > 0 ? "#d93025" : "#1e8e3e" }}>
-                    {o.diasSemLancar}
+                  <td style={{ padding: 8 }}>{o.diasSemLancar}</td>
+                  <td style={{ padding: 8, fontWeight: 700, color: o.semJustificativa > 0 ? "#d93025" : "#1e8e3e" }}>
+                    {o.semJustificativa}
                   </td>
                   <td style={{ padding: 8 }}>{o.totalDias - o.diasSemLancar}</td>
                 </tr>
@@ -312,7 +377,10 @@ function TabelaFrequencia({ lista, dataInicio, dataFim }: { lista: RegistroLinha
 
       <div style={{ marginBottom: 28 }}>
         <h3 style={{ color: "#1B4FA2", fontSize: 17, marginBottom: 8 }}>Dia a dia</h3>
-        <p style={{ fontSize: 13, color: "#666", marginBottom: 8 }}>✓ lançou pelo menos um registro naquele dia · — não lançou.</p>
+        <p style={{ fontSize: 13, color: "#666", marginBottom: 8 }}>
+          ✓ lançou pelo menos um registro naquele dia. Nos dias sem lançamento, escolha um motivo padrão pra
+          justificar. {carregandoJust && "Carregando justificativas..."}
+        </p>
         <div style={{ overflowX: "auto" }}>
           <table style={{ width: "100%", borderCollapse: "collapse" }}>
             <thead>
@@ -331,9 +399,36 @@ function TabelaFrequencia({ lista, dataInicio, dataFim }: { lista: RegistroLinha
                   <td style={{ padding: 8, whiteSpace: "nowrap" }}>{formatarDataCurta(dia)}</td>
                   {OPERADORES_CAMPO.map((op) => {
                     const lancou = porDia.get(dia)?.has(op.nome);
+                    if (lancou) {
+                      return (
+                        <td key={op.cpf} style={{ padding: 8, textAlign: "center", color: "#1e8e3e", fontWeight: 700 }}>
+                          ✓
+                        </td>
+                      );
+                    }
+                    const motivoAtual = justificativas[chaveJust(op.cpf, dia)] ?? "";
                     return (
-                      <td key={op.cpf} style={{ padding: 8, textAlign: "center", color: lancou ? "#1e8e3e" : "#d93025", fontWeight: 700 }}>
-                        {lancou ? "✓" : "—"}
+                      <td key={op.cpf} style={{ padding: 4, textAlign: "center" }}>
+                        <select
+                          value={motivoAtual}
+                          onChange={(e) => salvarJustificativa(op.cpf, dia, e.target.value)}
+                          style={{
+                            fontSize: 11,
+                            padding: "4px 2px",
+                            borderRadius: 4,
+                            border: "1px solid #ddd",
+                            color: motivoAtual ? "#1B4FA2" : "#d93025",
+                            fontWeight: 700,
+                            maxWidth: 110,
+                          }}
+                        >
+                          <option value="">— (sem motivo)</option>
+                          {MOTIVOS_JUSTIFICATIVA.map((m) => (
+                            <option key={m} value={m}>
+                              {m}
+                            </option>
+                          ))}
+                        </select>
                       </td>
                     );
                   })}
@@ -444,7 +539,7 @@ export default function PainelIndicadores({ cpfAdmin, onVoltar }: { cpfAdmin: st
       {carregando && <p>Carregando...</p>}
 
       {lista && !carregando && aba === "frequencia" && (
-        <TabelaFrequencia lista={lista} dataInicio={dataInicio} dataFim={dataFim} />
+        <TabelaFrequencia lista={lista} dataInicio={dataInicio} dataFim={dataFim} cpfAdmin={cpfAdmin} />
       )}
 
       {lista && !carregando && aba === "indicadores" && (

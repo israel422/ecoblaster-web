@@ -44,6 +44,23 @@ export const acessos = pgTable("acessos", {
   operador: text("operador").notNull(),
 });
 
+// Justificativa padrão pra um operador não ter lançado nenhum registro em
+// um dia (folga, atestado, chuva etc.) — usado no Painel de Indicadores,
+// aba Frequência. Uma justificativa por operador+data (upsert).
+export const justificativas = pgTable(
+  "justificativas",
+  {
+    id: bigserial("id", { mode: "number" }).primaryKey(),
+    cpf: text("cpf").notNull(),
+    operador: text("operador").notNull(),
+    data: date("data").notNull(),
+    motivo: text("motivo").notNull(),
+    criadoPor: text("criado_por").notNull(),
+    criadoEm: timestamp("criado_em", { withTimezone: true }).notNull().defaultNow(),
+  },
+  (t) => [uniqueIndex("justificativas_cpf_data_unq").on(t.cpf, t.data)]
+);
+
 export const turnosAbertos = pgTable(
   "turnos_abertos",
   {
