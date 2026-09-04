@@ -273,6 +273,98 @@ function chaveJust(cpf: string, data: string) {
   return `${cpf}|${data}`;
 }
 
+const SEM_JUSTIFICATIVA = "Sem justificativa";
+
+const CORES_MOTIVO: Record<string, string> = {
+  [SEM_JUSTIFICATIVA]: "#d93025",
+  Folga: "#1a73e8",
+  Falta: "#b71c1c",
+  "Atestado médico": "#9334e6",
+  Férias: "#12939a",
+  "Chuva / Clima": "#0288d1",
+  "Manutenção de equipamento": "#795548",
+  "Deslocamento entre obras": "#e8710a",
+  "Sem obra disponível": "#5f6368",
+  Outro: "#e52592",
+};
+
+interface MotivosPorOperador {
+  operador: string;
+  total: number;
+  porMotivo: Record<string, number>;
+}
+
+function agregarMotivosPorOperador(
+  dias: string[],
+  porDia: Map<string, Set<string>>,
+  justificativas: Record<string, string>
+): MotivosPorOperador[] {
+  return OPERADORES_CAMPO.map((op) => {
+    const porMotivo: Record<string, number> = {};
+    let total = 0;
+    for (const dia of dias) {
+      if (porDia.get(dia)?.has(op.nome)) continue;
+      const motivo = justificativas[chaveJust(op.cpf, dia)] || SEM_JUSTIFICATIVA;
+      porMotivo[motivo] = (porMotivo[motivo] || 0) + 1;
+      total += 1;
+    }
+    return { operador: op.nome, total, porMotivo };
+  }).sort((a, b) => b.total - a.total);
+}
+
+function GraficoMotivosPorOperador({ linhas }: { linhas: MotivosPorOperador[] }) {
+  const max = Math.max(1, ...linhas.map((l) => l.total));
+  const motivosPresentes = [SEM_JUSTIFICATIVA, ...MOTIVOS_JUSTIFICATIVA].filter((m) =>
+    linhas.some((l) => l.porMotivo[m])
+  );
+
+  return (
+    <div>
+      <div style={{ display: "flex", flexWrap: "wrap", gap: 12, marginBottom: 12, fontSize: 12, color: "#444" }}>
+        {motivosPresentes.map((motivo) => (
+          <span key={motivo} style={{ display: "flex", alignItems: "center", gap: 4 }}>
+            <span style={{ width: 10, height: 10, borderRadius: 2, background: CORES_MOTIVO[motivo] ?? "#999", display: "inline-block" }} />
+            {motivo}
+          </span>
+        ))}
+      </div>
+      <div style={{ display: "flex", flexDirection: "column", gap: 8 }}>
+        {linhas.map((l) => (
+          <div key={l.operador} style={{ display: "flex", alignItems: "center", gap: 8 }}>
+            <div style={{ width: 180, fontSize: 12, color: "#444", textAlign: "right", flexShrink: 0 }}>{l.operador}</div>
+            <div style={{ flex: 1, display: "flex", background: "#f0f4f8", borderRadius: 6, overflow: "hidden", minHeight: 24 }}>
+              {motivosPresentes.map((motivo) => {
+                const valor = l.porMotivo[motivo] || 0;
+                if (!valor) return null;
+                return (
+                  <div
+                    key={motivo}
+                    title={`${motivo}: ${valor}`}
+                    style={{
+                      width: `${(valor / max) * 100}%`,
+                      background: CORES_MOTIVO[motivo] ?? "#999",
+                      color: "#fff",
+                      fontSize: 11,
+                      fontWeight: 700,
+                      padding: "6px 4px",
+                      whiteSpace: "nowrap",
+                      overflow: "hidden",
+                    }}
+                  >
+                    {valor}
+                  </div>
+                );
+              })}
+            </div>
+            <div style={{ width: 28, fontSize: 12, color: "#666", flexShrink: 0 }}>{l.total}</div>
+          </div>
+        ))}
+      </div>
+      {linhas.every((l) => l.total === 0) && <p style={{ color: "#888" }}>Nenhum dia sem lançamento no período.</p>}
+    </div>
+  );
+}
+
 function TabelaFrequencia({
   lista,
   dataInicio,
@@ -364,6 +456,14 @@ function TabelaFrequencia({
           </div>
           <div className="operador-label">Justificados</div>
         </div>
+      </div>
+
+      <div style={{ marginBottom: 28 }}>
+        <h3 style={{ color: "#1B4FA2", fontSize: 17, marginBottom: 8 }}>Motivos por Operador</h3>
+        <p style={{ fontSize: 13, color: "#666", marginBottom: 8 }}>
+          Dias sem lançamento de cada operador, separados por motivo (inclui os ainda sem justificativa).
+        </p>
+        <GraficoMotivosPorOperador linhas={agregarMotivosPorOperador(dias, porDia, justificativas)} />
       </div>
 
       <div style={{ marginBottom: 28 }}>
