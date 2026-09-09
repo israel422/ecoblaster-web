@@ -280,6 +280,7 @@ const CORES_MOTIVO: Record<string, string> = {
   Folga: "#1a73e8",
   Falta: "#b71c1c",
   "Atestado médico": "#9334e6",
+  "Exame periódico": "#7cb342",
   Férias: "#12939a",
   "Chuva / Clima": "#0288d1",
   "Manutenção de equipamento": "#795548",

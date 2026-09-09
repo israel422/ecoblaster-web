@@ -4,6 +4,7 @@ export const MOTIVOS_JUSTIFICATIVA = [
   "Folga",
   "Falta",
   "Atestado médico",
+  "Exame periódico",
   "Férias",
   "Chuva / Clima",
   "Manutenção de equipamento",
