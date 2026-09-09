@@ -1,5 +1,5 @@
 import { sql } from "drizzle-orm";
-import { pgTable, bigserial, uuid, text, integer, date, timestamp, jsonb, boolean, uniqueIndex } from "drizzle-orm/pg-core";
+import { pgTable, bigserial, serial, uuid, text, integer, date, timestamp, jsonb, boolean, uniqueIndex } from "drizzle-orm/pg-core";
 
 export const registros = pgTable("registros", {
   id: bigserial("id", { mode: "number" }).primaryKey(),
@@ -61,21 +61,35 @@ export const justificativas = pgTable(
   (t) => [uniqueIndex("justificativas_cpf_data_unq").on(t.cpf, t.data)]
 );
 
+// Equipes que trabalham com trado (novo = bits diamantado, antigo = trado
+// convencional). Cadastradas pelo admin direto na tela, pra comparar
+// desempenho entre os dois tipos de equipamento.
+export const equipesTrado = pgTable("equipes_trado", {
+  id: serial("id").primaryKey(),
+  cidade: text("cidade").notNull(),
+  responsavel: text("responsavel"),
+  tipoEquipamento: text("tipo_equipamento").notNull(), // "novo" | "antigo"
+  ativo: boolean("ativo").notNull().default(true),
+  criadoEm: timestamp("criado_em", { withTimezone: true }).notNull().defaultNow(),
+});
+
 // Lançamento manual (feito pelo admin, não pelo app de campo) da produção
-// diária das equipes de trado com bits diamantado, por cidade/equipe.
-// Uma linha por equipe+data (upsert quando o admin corrige o número do dia).
+// diária de cada equipe de trado. Uma linha por equipe+data (upsert quando
+// o admin corrige o número do dia).
 export const cavasTrado = pgTable(
   "cavas_trado",
   {
     id: bigserial("id", { mode: "number" }).primaryKey(),
     data: date("data").notNull(),
-    equipe: text("equipe").notNull(), // cidade da equipe: "Serra Talhada" | "Ouricuri" | "Petrolina"
+    equipeId: integer("equipe_id")
+      .notNull()
+      .references(() => equipesTrado.id),
     quantidadeCavas: integer("quantidade_cavas").notNull(),
     observacao: text("observacao"),
     criadoPor: text("criado_por").notNull(),
     criadoEm: timestamp("criado_em", { withTimezone: true }).notNull().defaultNow(),
   },
-  (t) => [uniqueIndex("cavas_trado_equipe_data_unq").on(t.equipe, t.data)]
+  (t) => [uniqueIndex("cavas_trado_equipe_data_unq").on(t.equipeId, t.data)]
 );
 
 export const turnosAbertos = pgTable(

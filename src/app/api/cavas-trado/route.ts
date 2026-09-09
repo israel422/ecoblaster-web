@@ -1,9 +1,8 @@
 import { NextResponse } from "next/server";
-import { and, gte, lte } from "drizzle-orm";
+import { and, eq, gte, lte } from "drizzle-orm";
 import { db } from "@/lib/db/client";
-import { cavasTrado } from "@/lib/db/schema";
+import { cavasTrado, equipesTrado } from "@/lib/db/schema";
 import { isAdmin } from "@/lib/config/operadores";
-import { EQUIPES_TRADO } from "@/lib/config/equipesTrado";
 
 export async function GET(req: Request) {
   const { searchParams } = new URL(req.url);
@@ -35,23 +34,28 @@ export async function POST(req: Request) {
   }
 
   const data = body?.data;
-  const equipe = String(body?.equipe ?? "").trim();
+  const equipeId = Number(body?.equipeId);
   const quantidadeCavas = Number(body?.quantidadeCavas);
   const observacao = body?.observacao ? String(body.observacao).trim() : null;
 
-  if (!data || !EQUIPES_TRADO.some((e) => e.cidade === equipe)) {
+  if (!data || !Number.isInteger(equipeId)) {
     return NextResponse.json({ sucesso: false, erro: "Dados inválidos" }, { status: 400 });
   }
   if (!Number.isInteger(quantidadeCavas) || quantidadeCavas < 0) {
     return NextResponse.json({ sucesso: false, erro: "Quantidade de cavas inválida" }, { status: 400 });
   }
 
+  const [equipe] = await db.select().from(equipesTrado).where(eq(equipesTrado.id, equipeId)).limit(1);
+  if (!equipe) {
+    return NextResponse.json({ sucesso: false, erro: "Equipe não encontrada" }, { status: 400 });
+  }
+
   try {
     await db
       .insert(cavasTrado)
-      .values({ data, equipe, quantidadeCavas, observacao, criadoPor: cpfAdmin })
+      .values({ data, equipeId, quantidadeCavas, observacao, criadoPor: cpfAdmin })
       .onConflictDoUpdate({
-        target: [cavasTrado.equipe, cavasTrado.data],
+        target: [cavasTrado.equipeId, cavasTrado.data],
         set: { quantidadeCavas, observacao, criadoPor: cpfAdmin, criadoEm: new Date() },
       });
 

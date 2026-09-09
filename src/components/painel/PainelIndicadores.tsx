@@ -4,7 +4,6 @@ import { useEffect, useState } from "react";
 import { TIPOS_CAVA } from "@/lib/config/tiposCava";
 import { OPERADORES } from "@/lib/config/operadores";
 import { MOTIVOS_JUSTIFICATIVA } from "@/lib/config/motivosJustificativa";
-import { EQUIPES_TRADO } from "@/lib/config/equipesTrado";
 
 interface RegistroLinha {
   id: number;
@@ -566,33 +565,128 @@ function TabelaFrequencia({
   );
 }
 
+type TipoEquipamento = "novo" | "antigo";
+
+const LABEL_TIPO: Record<TipoEquipamento, string> = {
+  novo: "Trado Novo (bits diamantado)",
+  antigo: "Trado Antigo",
+};
+
+interface EquipeTradoLinha {
+  id: number;
+  cidade: string;
+  responsavel: string | null;
+  tipoEquipamento: TipoEquipamento;
+  ativo: boolean;
+}
+
 interface CavaTradoLinha {
   id: number;
   data: string;
-  equipe: string;
+  equipeId: number;
   quantidadeCavas: number;
   observacao: string | null;
 }
 
+function LinhaEquipeEditavel({
+  equipe,
+  cpfAdmin,
+  onSalvo,
+}: {
+  equipe: EquipeTradoLinha;
+  cpfAdmin: string;
+  onSalvo: () => void;
+}) {
+  const [cidade, setCidade] = useState(equipe.cidade);
+  const [responsavel, setResponsavel] = useState(equipe.responsavel ?? "");
+  const [tipoEquipamento, setTipoEquipamento] = useState<TipoEquipamento>(equipe.tipoEquipamento);
+  const [ativo, setAtivo] = useState(equipe.ativo);
+  const [salvando, setSalvando] = useState(false);
+
+  async function salvar() {
+    setSalvando(true);
+    await fetch(`/api/equipes-trado/${equipe.id}`, {
+      method: "PATCH",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ cpf: cpfAdmin, cidade, responsavel: responsavel || null, tipoEquipamento, ativo }),
+    });
+    setSalvando(false);
+    onSalvo();
+  }
+
+  return (
+    <tr style={{ borderBottom: "1px solid #eee", opacity: ativo ? 1 : 0.5 }}>
+      <td style={{ padding: 6 }}>
+        <input className="campo-grande" style={{ padding: 6, width: 140 }} value={cidade} onChange={(e) => setCidade(e.target.value)} />
+      </td>
+      <td style={{ padding: 6 }}>
+        <input
+          className="campo-grande"
+          style={{ padding: 6, width: 160 }}
+          value={responsavel}
+          placeholder="(sem nome ainda)"
+          onChange={(e) => setResponsavel(e.target.value)}
+        />
+      </td>
+      <td style={{ padding: 6 }}>
+        <select
+          className="campo-grande"
+          style={{ padding: 6 }}
+          value={tipoEquipamento}
+          onChange={(e) => setTipoEquipamento(e.target.value as TipoEquipamento)}
+        >
+          <option value="novo">Trado Novo</option>
+          <option value="antigo">Trado Antigo</option>
+        </select>
+      </td>
+      <td style={{ padding: 6, textAlign: "center" }}>
+        <input type="checkbox" checked={ativo} onChange={(e) => setAtivo(e.target.checked)} />
+      </td>
+      <td style={{ padding: 6 }}>
+        <button className="btn-avancar" style={{ padding: "6px 12px", fontSize: 12 }} onClick={salvar} disabled={salvando}>
+          {salvando ? "..." : "Salvar"}
+        </button>
+      </td>
+    </tr>
+  );
+}
+
 function AbaCavasTrado({ dataInicio, dataFim, cpfAdmin }: { dataInicio: string; dataFim: string; cpfAdmin: string }) {
   const [lista, setLista] = useState<CavaTradoLinha[]>([]);
+  const [equipes, setEquipes] = useState<EquipeTradoLinha[]>([]);
   const [carregando, setCarregando] = useState(false);
   const [erro, setErro] = useState<string | null>(null);
+  const [mostrarGerenciar, setMostrarGerenciar] = useState(false);
 
   const [formData, setFormData] = useState("");
-  const [formEquipe, setFormEquipe] = useState(EQUIPES_TRADO[0].cidade);
+  const [formEquipeId, setFormEquipeId] = useState("");
   const [formQuantidade, setFormQuantidade] = useState("");
   const [formObservacao, setFormObservacao] = useState("");
   const [salvando, setSalvando] = useState(false);
+
+  const [novaCidade, setNovaCidade] = useState("");
+  const [novoResponsavel, setNovoResponsavel] = useState("");
+  const [novoTipo, setNovoTipo] = useState<TipoEquipamento>("antigo");
+  const [criandoEquipe, setCriandoEquipe] = useState(false);
+
+  const equipesAtivas = equipes.filter((e) => e.ativo);
+  const equipesNovo = equipesAtivas.filter((e) => e.tipoEquipamento === "novo");
+  const equipesAntigo = equipesAtivas.filter((e) => e.tipoEquipamento === "antigo");
+  const equipeIdSelecionado = formEquipeId || String(equipesAtivas[0]?.id ?? "");
 
   async function carregar() {
     setCarregando(true);
     const params = new URLSearchParams({ cpf: cpfAdmin });
     if (dataInicio) params.set("dataInicio", dataInicio);
     if (dataFim) params.set("dataFim", dataFim);
-    const resp = await fetch(`/api/cavas-trado?${params.toString()}`);
-    const json = resp.ok ? await resp.json() : [];
-    setLista(Array.isArray(json) ? json : []);
+    const [respCavas, respEquipes] = await Promise.all([
+      fetch(`/api/cavas-trado?${params.toString()}`),
+      fetch(`/api/equipes-trado?cpf=${encodeURIComponent(cpfAdmin)}`),
+    ]);
+    const jsonCavas = respCavas.ok ? await respCavas.json() : [];
+    const jsonEquipes = respEquipes.ok ? await respEquipes.json() : [];
+    setLista(Array.isArray(jsonCavas) ? jsonCavas : []);
+    setEquipes(Array.isArray(jsonEquipes) ? jsonEquipes : []);
     setCarregando(false);
   }
 
@@ -605,8 +699,8 @@ function AbaCavasTrado({ dataInicio, dataFim, cpfAdmin }: { dataInicio: string; 
   async function salvar() {
     setErro(null);
     const quantidade = Number(formQuantidade);
-    if (!formData) {
-      setErro("Escolha a data.");
+    if (!formData || !equipeIdSelecionado) {
+      setErro("Escolha a data e a equipe.");
       return;
     }
     if (!Number.isInteger(quantidade) || quantidade < 0) {
@@ -621,7 +715,7 @@ function AbaCavasTrado({ dataInicio, dataFim, cpfAdmin }: { dataInicio: string; 
       body: JSON.stringify({
         cpf: cpfAdmin,
         data: formData,
-        equipe: formEquipe,
+        equipeId: Number(equipeIdSelecionado),
         quantidadeCavas: quantidade,
         observacao: formObservacao || null,
       }),
@@ -644,15 +738,45 @@ function AbaCavasTrado({ dataInicio, dataFim, cpfAdmin }: { dataInicio: string; 
     await carregar();
   }
 
-  const resumoPorEquipe = EQUIPES_TRADO.map((eq) => {
-    const doTime = lista.filter((l) => l.equipe === eq.cidade);
-    const totalCavas = doTime.reduce((soma, l) => soma + l.quantidadeCavas, 0);
-    const dias = doTime.length;
-    return { ...eq, totalCavas, dias, mediaPorDia: dias > 0 ? totalCavas / dias : 0 };
-  });
-  const totalGeral = resumoPorEquipe.reduce((soma, e) => soma + e.totalCavas, 0);
+  async function criarEquipe() {
+    if (!novaCidade.trim()) return;
+    setCriandoEquipe(true);
+    await fetch("/api/equipes-trado", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ cpf: cpfAdmin, cidade: novaCidade.trim(), responsavel: novoResponsavel || null, tipoEquipamento: novoTipo }),
+    });
+    setCriandoEquipe(false);
+    setNovaCidade("");
+    setNovoResponsavel("");
+    await carregar();
+  }
+
+  function resumoDoGrupo(grupo: EquipeTradoLinha[]) {
+    return grupo.map((eq) => {
+      const doTime = lista.filter((l) => l.equipeId === eq.id);
+      const totalCavas = doTime.reduce((soma, l) => soma + l.quantidadeCavas, 0);
+      const dias = doTime.length;
+      return { ...eq, totalCavas, dias, mediaPorDia: dias > 0 ? totalCavas / dias : 0 };
+    });
+  }
+
+  const resumoNovo = resumoDoGrupo(equipesNovo);
+  const resumoAntigo = resumoDoGrupo(equipesAntigo);
+  const totalNovo = resumoNovo.reduce((s, e) => s + e.totalCavas, 0);
+  const totalAntigo = resumoAntigo.reduce((s, e) => s + e.totalCavas, 0);
+  const diasNovo = new Set(
+    lista.filter((l) => equipesNovo.some((e) => e.id === l.equipeId)).map((l) => l.data)
+  ).size;
+  const diasAntigo = new Set(
+    lista.filter((l) => equipesAntigo.some((e) => e.id === l.equipeId)).map((l) => l.data)
+  ).size;
+  const mediaNovo = diasNovo > 0 ? totalNovo / diasNovo : 0;
+  const mediaAntigo = diasAntigo > 0 ? totalAntigo / diasAntigo : 0;
 
   const linhasOrdenadas = [...lista].sort((a, b) => (a.data < b.data ? 1 : a.data > b.data ? -1 : 0));
+
+  const dias = dataInicio && dataFim ? diasNoIntervalo(dataInicio, dataFim) : [];
 
   return (
     <div>
@@ -676,15 +800,27 @@ function AbaCavasTrado({ dataInicio, dataFim, cpfAdmin }: { dataInicio: string; 
             <br />
             <select
               className="campo-grande"
-              style={{ width: 220, padding: 10, marginTop: 4 }}
-              value={formEquipe}
-              onChange={(e) => setFormEquipe(e.target.value)}
+              style={{ width: 240, padding: 10, marginTop: 4 }}
+              value={equipeIdSelecionado}
+              onChange={(e) => setFormEquipeId(e.target.value)}
             >
-              {EQUIPES_TRADO.map((eq) => (
-                <option key={eq.cidade} value={eq.cidade}>
-                  {eq.cidade} — {eq.responsavel}
-                </option>
-              ))}
+              {equipesAtivas.length === 0 && <option value="">Cadastre uma equipe abaixo primeiro</option>}
+              <optgroup label={LABEL_TIPO.novo}>
+                {equipesNovo.map((eq) => (
+                  <option key={eq.id} value={eq.id}>
+                    {eq.cidade}
+                    {eq.responsavel ? ` — ${eq.responsavel}` : ""}
+                  </option>
+                ))}
+              </optgroup>
+              <optgroup label={LABEL_TIPO.antigo}>
+                {equipesAntigo.map((eq) => (
+                  <option key={eq.id} value={eq.id}>
+                    {eq.cidade}
+                    {eq.responsavel ? ` — ${eq.responsavel}` : ""}
+                  </option>
+                ))}
+              </optgroup>
             </select>
           </label>
           <label style={{ fontSize: 13, color: "#666" }}>
@@ -719,20 +855,138 @@ function AbaCavasTrado({ dataInicio, dataFim, cpfAdmin }: { dataInicio: string; 
         </p>
       </div>
 
-      <div style={{ display: "flex", gap: 16, marginBottom: 28, flexWrap: "wrap" }}>
-        <div className="operador-card" style={{ flex: "1 1 140px" }}>
-          <div className="operador-nome">{totalGeral}</div>
-          <div className="operador-label">Total de cavas (trado)</div>
-        </div>
-        {resumoPorEquipe.map((eq) => (
-          <div className="operador-card" key={eq.cidade} style={{ flex: "1 1 160px" }}>
-            <div className="operador-nome">{eq.totalCavas}</div>
-            <div className="operador-label">
-              {eq.cidade} · média {eq.mediaPorDia.toFixed(1)}/dia
+      <div style={{ marginBottom: 28 }}>
+        <button
+          onClick={() => setMostrarGerenciar((v) => !v)}
+          style={{ border: "none", background: "none", color: "#1B4FA2", cursor: "pointer", fontWeight: 700, fontSize: 14, padding: 0, marginBottom: 12 }}
+        >
+          {mostrarGerenciar ? "▾" : "▸"} Gerenciar equipes ({equipes.length})
+        </button>
+        {mostrarGerenciar && (
+          <div>
+            <div style={{ overflowX: "auto", marginBottom: 12 }}>
+              <table style={{ width: "100%", borderCollapse: "collapse" }}>
+                <thead>
+                  <tr style={{ textAlign: "left", borderBottom: "2px solid #e0e0e0" }}>
+                    <th style={{ padding: 6 }}>Cidade</th>
+                    <th style={{ padding: 6 }}>Responsável</th>
+                    <th style={{ padding: 6 }}>Equipamento</th>
+                    <th style={{ padding: 6 }}>Ativa</th>
+                    <th style={{ padding: 6 }}></th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {equipes.map((eq) => (
+                    <LinhaEquipeEditavel key={eq.id} equipe={eq} cpfAdmin={cpfAdmin} onSalvo={carregar} />
+                  ))}
+                  {equipes.length === 0 && (
+                    <tr>
+                      <td style={{ padding: 6 }} colSpan={5}>
+                        Nenhuma equipe cadastrada ainda.
+                      </td>
+                    </tr>
+                  )}
+                </tbody>
+              </table>
+            </div>
+
+            <div style={{ display: "flex", gap: 12, flexWrap: "wrap", alignItems: "end", background: "#f0f4f8", borderRadius: 10, padding: 12 }}>
+              <label style={{ fontSize: 13, color: "#666" }}>
+                Cidade
+                <br />
+                <input
+                  className="campo-grande"
+                  style={{ padding: 8, width: 160, marginTop: 4 }}
+                  value={novaCidade}
+                  onChange={(e) => setNovaCidade(e.target.value)}
+                  placeholder="Ex: Salgueiro"
+                />
+              </label>
+              <label style={{ fontSize: 13, color: "#666" }}>
+                Responsável (opcional)
+                <br />
+                <input
+                  className="campo-grande"
+                  style={{ padding: 8, width: 180, marginTop: 4 }}
+                  value={novoResponsavel}
+                  onChange={(e) => setNovoResponsavel(e.target.value)}
+                  placeholder="Ainda não sei"
+                />
+              </label>
+              <label style={{ fontSize: 13, color: "#666" }}>
+                Equipamento
+                <br />
+                <select
+                  className="campo-grande"
+                  style={{ padding: 8, marginTop: 4 }}
+                  value={novoTipo}
+                  onChange={(e) => setNovoTipo(e.target.value as TipoEquipamento)}
+                >
+                  <option value="novo">Trado Novo</option>
+                  <option value="antigo">Trado Antigo</option>
+                </select>
+              </label>
+              <button className="btn-avancar" style={{ padding: "8px 16px" }} onClick={criarEquipe} disabled={criandoEquipe}>
+                {criandoEquipe ? "Adicionando..." : "+ Adicionar equipe"}
+              </button>
             </div>
           </div>
-        ))}
+        )}
       </div>
+
+      <div style={{ marginBottom: 28 }}>
+        <h3 style={{ color: "#1B4FA2", fontSize: 17, marginBottom: 8 }}>Trado Novo × Trado Antigo</h3>
+        <div style={{ display: "flex", gap: 16, flexWrap: "wrap" }}>
+          <div className="operador-card" style={{ flex: "1 1 200px", borderColor: "#1a73e8" }}>
+            <div className="operador-nome" style={{ color: "#1a73e8" }}>
+              {totalNovo}
+            </div>
+            <div className="operador-label">Trado Novo · média {mediaNovo.toFixed(1)}/dia ({diasNovo} dia(s))</div>
+          </div>
+          <div className="operador-card" style={{ flex: "1 1 200px", borderColor: "#e8710a" }}>
+            <div className="operador-nome" style={{ color: "#e8710a" }}>
+              {totalAntigo}
+            </div>
+            <div className="operador-label">Trado Antigo · média {mediaAntigo.toFixed(1)}/dia ({diasAntigo} dia(s))</div>
+          </div>
+        </div>
+      </div>
+
+      {dias.length > 0 && (
+        <div style={{ marginBottom: 28 }}>
+          <h3 style={{ color: "#1B4FA2", fontSize: 17, marginBottom: 8 }}>Dia a dia — Novo × Antigo</h3>
+          <div style={{ overflowX: "auto" }}>
+            <table style={{ width: "100%", borderCollapse: "collapse" }}>
+              <thead>
+                <tr style={{ textAlign: "left", borderBottom: "2px solid #e0e0e0" }}>
+                  <th style={{ padding: 8 }}>Data</th>
+                  <th style={{ padding: 8, color: "#1a73e8" }}>Trado Novo</th>
+                  <th style={{ padding: 8, color: "#e8710a" }}>Trado Antigo</th>
+                </tr>
+              </thead>
+              <tbody>
+                {dias.map((dia) => {
+                  const doDiaNovo = lista.filter((l) => l.data === dia && equipesNovo.some((e) => e.id === l.equipeId));
+                  const doDiaAntigo = lista.filter((l) => l.data === dia && equipesAntigo.some((e) => e.id === l.equipeId));
+                  const somaNovo = doDiaNovo.reduce((s, l) => s + l.quantidadeCavas, 0);
+                  const somaAntigo = doDiaAntigo.reduce((s, l) => s + l.quantidadeCavas, 0);
+                  return (
+                    <tr key={dia} style={{ borderBottom: "1px solid #eee" }}>
+                      <td style={{ padding: 8 }}>{formatarDataCurta(dia)}</td>
+                      <td style={{ padding: 8, fontWeight: doDiaNovo.length ? 700 : 400, color: doDiaNovo.length ? "#1a73e8" : "#bbb" }}>
+                        {doDiaNovo.length ? somaNovo : "—"}
+                      </td>
+                      <td style={{ padding: 8, fontWeight: doDiaAntigo.length ? 700 : 400, color: doDiaAntigo.length ? "#e8710a" : "#bbb" }}>
+                        {doDiaAntigo.length ? somaAntigo : "—"}
+                      </td>
+                    </tr>
+                  );
+                })}
+              </tbody>
+            </table>
+          </div>
+        </div>
+      )}
 
       <div style={{ marginBottom: 28 }}>
         <h3 style={{ color: "#1B4FA2", fontSize: 17, marginBottom: 8 }}>Resumo por equipe</h3>
@@ -742,21 +996,30 @@ function AbaCavasTrado({ dataInicio, dataFim, cpfAdmin }: { dataInicio: string; 
               <tr style={{ textAlign: "left", borderBottom: "2px solid #e0e0e0" }}>
                 <th style={{ padding: 8 }}>Equipe</th>
                 <th style={{ padding: 8 }}>Responsável</th>
+                <th style={{ padding: 8 }}>Equipamento</th>
                 <th style={{ padding: 8 }}>Cavas</th>
                 <th style={{ padding: 8 }}>Dias lançados</th>
                 <th style={{ padding: 8 }}>Média de cavas/dia</th>
               </tr>
             </thead>
             <tbody>
-              {resumoPorEquipe.map((eq) => (
-                <tr key={eq.cidade} style={{ borderBottom: "1px solid #eee" }}>
+              {[...resumoNovo, ...resumoAntigo].map((eq) => (
+                <tr key={eq.id} style={{ borderBottom: "1px solid #eee" }}>
                   <td style={{ padding: 8 }}>{eq.cidade}</td>
-                  <td style={{ padding: 8 }}>{eq.responsavel}</td>
+                  <td style={{ padding: 8 }}>{eq.responsavel ?? "—"}</td>
+                  <td style={{ padding: 8 }}>{LABEL_TIPO[eq.tipoEquipamento]}</td>
                   <td style={{ padding: 8 }}>{eq.totalCavas}</td>
                   <td style={{ padding: 8 }}>{eq.dias}</td>
                   <td style={{ padding: 8, fontWeight: 700 }}>{eq.mediaPorDia.toFixed(1)}</td>
                 </tr>
               ))}
+              {equipesAtivas.length === 0 && (
+                <tr>
+                  <td style={{ padding: 8 }} colSpan={6}>
+                    Nenhuma equipe ativa cadastrada.
+                  </td>
+                </tr>
+              )}
             </tbody>
           </table>
         </div>
@@ -778,22 +1041,25 @@ function AbaCavasTrado({ dataInicio, dataFim, cpfAdmin }: { dataInicio: string; 
                 </tr>
               </thead>
               <tbody>
-                {linhasOrdenadas.map((l) => (
-                  <tr key={l.id} style={{ borderBottom: "1px solid #eee" }}>
-                    <td style={{ padding: 8 }}>{formatarDataCurta(l.data)}</td>
-                    <td style={{ padding: 8 }}>{l.equipe}</td>
-                    <td style={{ padding: 8 }}>{l.quantidadeCavas}</td>
-                    <td style={{ padding: 8 }}>{l.observacao ?? "—"}</td>
-                    <td style={{ padding: 8 }}>
-                      <button
-                        onClick={() => apagar(l.id)}
-                        style={{ border: "none", background: "none", color: "#d93025", cursor: "pointer", fontSize: 12 }}
-                      >
-                        Apagar
-                      </button>
-                    </td>
-                  </tr>
-                ))}
+                {linhasOrdenadas.map((l) => {
+                  const eq = equipes.find((e) => e.id === l.equipeId);
+                  return (
+                    <tr key={l.id} style={{ borderBottom: "1px solid #eee" }}>
+                      <td style={{ padding: 8 }}>{formatarDataCurta(l.data)}</td>
+                      <td style={{ padding: 8 }}>{eq ? eq.cidade : `Equipe #${l.equipeId}`}</td>
+                      <td style={{ padding: 8 }}>{l.quantidadeCavas}</td>
+                      <td style={{ padding: 8 }}>{l.observacao ?? "—"}</td>
+                      <td style={{ padding: 8 }}>
+                        <button
+                          onClick={() => apagar(l.id)}
+                          style={{ border: "none", background: "none", color: "#d93025", cursor: "pointer", fontSize: 12 }}
+                        >
+                          Apagar
+                        </button>
+                      </td>
+                    </tr>
+                  );
+                })}
                 {linhasOrdenadas.length === 0 && (
                   <tr>
                     <td style={{ padding: 8 }} colSpan={5}>
