@@ -17,7 +17,6 @@ export const OPERADORES: Operador[] = [
   { cpf: "02897981598", nome: "IRAILDO DA CRUZ REIS", categoria: "Retroescavadeira", admin: false },
   { cpf: "13579062425", nome: "JAILSON ALVES DA SILVA", categoria: "Retroescavadeira", admin: false },
   { cpf: "11799082440", nome: "GHERMERSON PEREIRA BARBOSA", categoria: "Retroescavadeira", admin: false },
-  { cpf: "12497946418", nome: "DIOGO AMANDO DE OLIVEIRA", categoria: "Retroescavadeira", admin: false },
   { cpf: "07658074403", nome: "ANTONIO CARLOS DA SILVA", categoria: "Retroescavadeira", admin: false },
   { cpf: "70239725441", nome: "ISRAEL IURY JACINTO DE SOUZA", categoria: null, admin: true },
   { cpf: "03815690552", nome: "JOCECINO JOSE DOS SANTOS FILHO", categoria: null, admin: true },
