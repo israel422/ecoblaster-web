@@ -61,6 +61,23 @@ export const justificativas = pgTable(
   (t) => [uniqueIndex("justificativas_cpf_data_unq").on(t.cpf, t.data)]
 );
 
+// Lançamento manual (feito pelo admin, não pelo app de campo) da produção
+// diária das equipes de trado com bits diamantado, por cidade/equipe.
+// Uma linha por equipe+data (upsert quando o admin corrige o número do dia).
+export const cavasTrado = pgTable(
+  "cavas_trado",
+  {
+    id: bigserial("id", { mode: "number" }).primaryKey(),
+    data: date("data").notNull(),
+    equipe: text("equipe").notNull(), // cidade da equipe: "Serra Talhada" | "Ouricuri" | "Petrolina"
+    quantidadeCavas: integer("quantidade_cavas").notNull(),
+    observacao: text("observacao"),
+    criadoPor: text("criado_por").notNull(),
+    criadoEm: timestamp("criado_em", { withTimezone: true }).notNull().defaultNow(),
+  },
+  (t) => [uniqueIndex("cavas_trado_equipe_data_unq").on(t.equipe, t.data)]
+);
+
 export const turnosAbertos = pgTable(
   "turnos_abertos",
   {

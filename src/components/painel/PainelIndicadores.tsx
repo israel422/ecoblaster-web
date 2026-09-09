@@ -4,6 +4,7 @@ import { useEffect, useState } from "react";
 import { TIPOS_CAVA } from "@/lib/config/tiposCava";
 import { OPERADORES } from "@/lib/config/operadores";
 import { MOTIVOS_JUSTIFICATIVA } from "@/lib/config/motivosJustificativa";
+import { EQUIPES_TRADO } from "@/lib/config/equipesTrado";
 
 interface RegistroLinha {
   id: number;
@@ -565,12 +566,256 @@ function TabelaFrequencia({
   );
 }
 
+interface CavaTradoLinha {
+  id: number;
+  data: string;
+  equipe: string;
+  quantidadeCavas: number;
+  observacao: string | null;
+}
+
+function AbaCavasTrado({ dataInicio, dataFim, cpfAdmin }: { dataInicio: string; dataFim: string; cpfAdmin: string }) {
+  const [lista, setLista] = useState<CavaTradoLinha[]>([]);
+  const [carregando, setCarregando] = useState(false);
+  const [erro, setErro] = useState<string | null>(null);
+
+  const [formData, setFormData] = useState("");
+  const [formEquipe, setFormEquipe] = useState(EQUIPES_TRADO[0].cidade);
+  const [formQuantidade, setFormQuantidade] = useState("");
+  const [formObservacao, setFormObservacao] = useState("");
+  const [salvando, setSalvando] = useState(false);
+
+  async function carregar() {
+    setCarregando(true);
+    const params = new URLSearchParams({ cpf: cpfAdmin });
+    if (dataInicio) params.set("dataInicio", dataInicio);
+    if (dataFim) params.set("dataFim", dataFim);
+    const resp = await fetch(`/api/cavas-trado?${params.toString()}`);
+    const json = resp.ok ? await resp.json() : [];
+    setLista(Array.isArray(json) ? json : []);
+    setCarregando(false);
+  }
+
+  useEffect(() => {
+    // eslint-disable-next-line react-hooks/set-state-in-effect -- busca ao montar/trocar filtro, mesmo padrão usado em TabelaFrequencia
+    carregar();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [dataInicio, dataFim, cpfAdmin]);
+
+  async function salvar() {
+    setErro(null);
+    const quantidade = Number(formQuantidade);
+    if (!formData) {
+      setErro("Escolha a data.");
+      return;
+    }
+    if (!Number.isInteger(quantidade) || quantidade < 0) {
+      setErro("Quantidade de cavas inválida.");
+      return;
+    }
+
+    setSalvando(true);
+    const resp = await fetch("/api/cavas-trado", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({
+        cpf: cpfAdmin,
+        data: formData,
+        equipe: formEquipe,
+        quantidadeCavas: quantidade,
+        observacao: formObservacao || null,
+      }),
+    });
+    setSalvando(false);
+
+    if (!resp.ok) {
+      setErro("Não foi possível salvar. Tente de novo.");
+      return;
+    }
+
+    setFormQuantidade("");
+    setFormObservacao("");
+    await carregar();
+  }
+
+  async function apagar(id: number) {
+    if (!confirm("Apagar esse lançamento?")) return;
+    await fetch(`/api/cavas-trado/${id}?cpf=${encodeURIComponent(cpfAdmin)}`, { method: "DELETE" });
+    await carregar();
+  }
+
+  const resumoPorEquipe = EQUIPES_TRADO.map((eq) => {
+    const doTime = lista.filter((l) => l.equipe === eq.cidade);
+    const totalCavas = doTime.reduce((soma, l) => soma + l.quantidadeCavas, 0);
+    const dias = doTime.length;
+    return { ...eq, totalCavas, dias, mediaPorDia: dias > 0 ? totalCavas / dias : 0 };
+  });
+  const totalGeral = resumoPorEquipe.reduce((soma, e) => soma + e.totalCavas, 0);
+
+  const linhasOrdenadas = [...lista].sort((a, b) => (a.data < b.data ? 1 : a.data > b.data ? -1 : 0));
+
+  return (
+    <div>
+      <div style={{ marginBottom: 28, background: "#f0f4f8", borderRadius: 10, padding: 16 }}>
+        <h3 style={{ color: "#1B4FA2", fontSize: 17, marginBottom: 12 }}>Lançar produção do dia</h3>
+        {erro && <p style={{ color: "#d93025", marginBottom: 8 }}>{erro}</p>}
+        <div style={{ display: "flex", gap: 12, flexWrap: "wrap", alignItems: "end" }}>
+          <label style={{ fontSize: 13, color: "#666" }}>
+            Data
+            <br />
+            <input
+              className="campo-grande"
+              style={{ width: 160, padding: 10, marginTop: 4 }}
+              type="date"
+              value={formData}
+              onChange={(e) => setFormData(e.target.value)}
+            />
+          </label>
+          <label style={{ fontSize: 13, color: "#666" }}>
+            Equipe
+            <br />
+            <select
+              className="campo-grande"
+              style={{ width: 220, padding: 10, marginTop: 4 }}
+              value={formEquipe}
+              onChange={(e) => setFormEquipe(e.target.value)}
+            >
+              {EQUIPES_TRADO.map((eq) => (
+                <option key={eq.cidade} value={eq.cidade}>
+                  {eq.cidade} — {eq.responsavel}
+                </option>
+              ))}
+            </select>
+          </label>
+          <label style={{ fontSize: 13, color: "#666" }}>
+            Qtd. de cavas
+            <br />
+            <input
+              className="campo-grande"
+              style={{ width: 120, padding: 10, marginTop: 4 }}
+              type="number"
+              min={0}
+              value={formQuantidade}
+              onChange={(e) => setFormQuantidade(e.target.value)}
+            />
+          </label>
+          <label style={{ fontSize: 13, color: "#666", flex: "1 1 200px" }}>
+            Observação (opcional)
+            <br />
+            <input
+              className="campo-grande"
+              style={{ width: "100%", padding: 10, marginTop: 4 }}
+              type="text"
+              value={formObservacao}
+              onChange={(e) => setFormObservacao(e.target.value)}
+            />
+          </label>
+          <button className="btn-avancar" style={{ padding: "10px 20px" }} onClick={salvar} disabled={salvando}>
+            {salvando ? "Salvando..." : "Salvar"}
+          </button>
+        </div>
+        <p style={{ fontSize: 12, color: "#888", marginTop: 8 }}>
+          Já existe um lançamento pra essa equipe nesse dia? Salvar de novo substitui o número.
+        </p>
+      </div>
+
+      <div style={{ display: "flex", gap: 16, marginBottom: 28, flexWrap: "wrap" }}>
+        <div className="operador-card" style={{ flex: "1 1 140px" }}>
+          <div className="operador-nome">{totalGeral}</div>
+          <div className="operador-label">Total de cavas (trado)</div>
+        </div>
+        {resumoPorEquipe.map((eq) => (
+          <div className="operador-card" key={eq.cidade} style={{ flex: "1 1 160px" }}>
+            <div className="operador-nome">{eq.totalCavas}</div>
+            <div className="operador-label">
+              {eq.cidade} · média {eq.mediaPorDia.toFixed(1)}/dia
+            </div>
+          </div>
+        ))}
+      </div>
+
+      <div style={{ marginBottom: 28 }}>
+        <h3 style={{ color: "#1B4FA2", fontSize: 17, marginBottom: 8 }}>Resumo por equipe</h3>
+        <div style={{ overflowX: "auto" }}>
+          <table style={{ width: "100%", borderCollapse: "collapse" }}>
+            <thead>
+              <tr style={{ textAlign: "left", borderBottom: "2px solid #e0e0e0" }}>
+                <th style={{ padding: 8 }}>Equipe</th>
+                <th style={{ padding: 8 }}>Responsável</th>
+                <th style={{ padding: 8 }}>Cavas</th>
+                <th style={{ padding: 8 }}>Dias lançados</th>
+                <th style={{ padding: 8 }}>Média de cavas/dia</th>
+              </tr>
+            </thead>
+            <tbody>
+              {resumoPorEquipe.map((eq) => (
+                <tr key={eq.cidade} style={{ borderBottom: "1px solid #eee" }}>
+                  <td style={{ padding: 8 }}>{eq.cidade}</td>
+                  <td style={{ padding: 8 }}>{eq.responsavel}</td>
+                  <td style={{ padding: 8 }}>{eq.totalCavas}</td>
+                  <td style={{ padding: 8 }}>{eq.dias}</td>
+                  <td style={{ padding: 8, fontWeight: 700 }}>{eq.mediaPorDia.toFixed(1)}</td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        </div>
+      </div>
+
+      <div style={{ marginBottom: 28 }}>
+        <h3 style={{ color: "#1B4FA2", fontSize: 17, marginBottom: 8 }}>Lançamentos no período</h3>
+        {carregando && <p>Carregando...</p>}
+        {!carregando && (
+          <div style={{ overflowX: "auto" }}>
+            <table style={{ width: "100%", borderCollapse: "collapse" }}>
+              <thead>
+                <tr style={{ textAlign: "left", borderBottom: "2px solid #e0e0e0" }}>
+                  <th style={{ padding: 8 }}>Data</th>
+                  <th style={{ padding: 8 }}>Equipe</th>
+                  <th style={{ padding: 8 }}>Cavas</th>
+                  <th style={{ padding: 8 }}>Observação</th>
+                  <th style={{ padding: 8 }}></th>
+                </tr>
+              </thead>
+              <tbody>
+                {linhasOrdenadas.map((l) => (
+                  <tr key={l.id} style={{ borderBottom: "1px solid #eee" }}>
+                    <td style={{ padding: 8 }}>{formatarDataCurta(l.data)}</td>
+                    <td style={{ padding: 8 }}>{l.equipe}</td>
+                    <td style={{ padding: 8 }}>{l.quantidadeCavas}</td>
+                    <td style={{ padding: 8 }}>{l.observacao ?? "—"}</td>
+                    <td style={{ padding: 8 }}>
+                      <button
+                        onClick={() => apagar(l.id)}
+                        style={{ border: "none", background: "none", color: "#d93025", cursor: "pointer", fontSize: 12 }}
+                      >
+                        Apagar
+                      </button>
+                    </td>
+                  </tr>
+                ))}
+                {linhasOrdenadas.length === 0 && (
+                  <tr>
+                    <td style={{ padding: 8 }} colSpan={5}>
+                      Nenhum lançamento no período.
+                    </td>
+                  </tr>
+                )}
+              </tbody>
+            </table>
+          </div>
+        )}
+      </div>
+    </div>
+  );
+}
+
 export default function PainelIndicadores({ cpfAdmin, onVoltar }: { cpfAdmin: string; onVoltar?: () => void }) {
   const [dataInicio, setDataInicio] = useState("");
   const [dataFim, setDataFim] = useState("");
   const [carregando, setCarregando] = useState(false);
   const [lista, setLista] = useState<RegistroLinha[] | null>(null);
-  const [aba, setAba] = useState<"indicadores" | "frequencia">("indicadores");
+  const [aba, setAba] = useState<"indicadores" | "frequencia" | "trado">("indicadores");
 
   async function buscar() {
     setCarregando(true);
@@ -657,9 +902,26 @@ export default function PainelIndicadores({ cpfAdmin, onVoltar }: { cpfAdmin: st
         >
           Frequência
         </button>
+        <button
+          onClick={() => setAba("trado")}
+          style={{
+            padding: "10px 16px",
+            border: "none",
+            background: "none",
+            cursor: "pointer",
+            fontSize: 14,
+            fontWeight: 700,
+            color: aba === "trado" ? "#1B4FA2" : "#888",
+            borderBottom: aba === "trado" ? "3px solid #1B4FA2" : "3px solid transparent",
+          }}
+        >
+          Trado
+        </button>
       </div>
 
-      {carregando && <p>Carregando...</p>}
+      {aba === "trado" && <AbaCavasTrado dataInicio={dataInicio} dataFim={dataFim} cpfAdmin={cpfAdmin} />}
+
+      {aba !== "trado" && carregando && <p>Carregando...</p>}
 
       {lista && !carregando && aba === "frequencia" && (
         <TabelaFrequencia lista={lista} dataInicio={dataInicio} dataFim={dataFim} cpfAdmin={cpfAdmin} />
