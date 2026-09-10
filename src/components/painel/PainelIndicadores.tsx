@@ -366,6 +366,46 @@ function GraficoMotivosPorOperador({ linhas }: { linhas: MotivosPorOperador[] })
   );
 }
 
+interface DiasLancadosPorOperador {
+  operador: string;
+  diasLancados: number;
+  totalDias: number;
+}
+
+function GraficoDiasLancados({ linhas }: { linhas: DiasLancadosPorOperador[] }) {
+  const max = Math.max(1, ...linhas.map((l) => l.totalDias));
+
+  return (
+    <div style={{ display: "flex", flexDirection: "column", gap: 8 }}>
+      {linhas.map((l) => (
+        <div key={l.operador} style={{ display: "flex", alignItems: "center", gap: 8 }}>
+          <div style={{ width: 180, fontSize: 12, color: "#444", textAlign: "right", flexShrink: 0 }}>{l.operador}</div>
+          <div style={{ flex: 1, background: "#f0f4f8", borderRadius: 6, overflow: "hidden", minHeight: 24 }}>
+            <div
+              title={`${l.operador}: ${l.diasLancados} de ${l.totalDias} dia(s)`}
+              style={{
+                width: `${(l.diasLancados / max) * 100}%`,
+                background: "#1e8e3e",
+                color: "#fff",
+                fontSize: 11,
+                fontWeight: 700,
+                padding: "6px 4px",
+                whiteSpace: "nowrap",
+                overflow: "hidden",
+                minWidth: l.diasLancados > 0 ? 18 : 0,
+              }}
+            >
+              {l.diasLancados}
+            </div>
+          </div>
+          <div style={{ width: 48, fontSize: 12, color: "#666", flexShrink: 0 }}>/ {l.totalDias}</div>
+        </div>
+      ))}
+      {linhas.every((l) => l.diasLancados === 0) && <p style={{ color: "#888" }}>Nenhum lançamento no período.</p>}
+    </div>
+  );
+}
+
 function TabelaFrequencia({
   lista,
   dataInicio,
@@ -438,6 +478,11 @@ function TabelaFrequencia({
   const totalSemJustificativa = resumoPorOperador.reduce((soma, o) => soma + o.semJustificativa, 0);
   const totalJustificado = totalDiasSemLancar - totalSemJustificativa;
 
+  const diasLancadosPorOperador: DiasLancadosPorOperador[] = resumoPorOperador
+    .map((o) => ({ operador: o.operador, diasLancados: o.totalDias - o.diasSemLancar, totalDias: o.totalDias }))
+    .sort((a, b) => b.diasLancados - a.diasLancados);
+  const totalDiasLancados = diasLancadosPorOperador.reduce((soma, o) => soma + o.diasLancados, 0);
+
   return (
     <div>
       <div style={{ display: "flex", gap: 16, marginBottom: 28, flexWrap: "wrap" }}>
@@ -457,6 +502,16 @@ function TabelaFrequencia({
           </div>
           <div className="operador-label">Justificados</div>
         </div>
+      </div>
+
+      <div style={{ marginBottom: 28 }}>
+        <h3 style={{ color: "#1B4FA2", fontSize: 17, marginBottom: 8 }}>
+          Dias Lançados por Operador <span style={{ color: "#666", fontWeight: 400, fontSize: 14 }}>({totalDiasLancados} no total)</span>
+        </h3>
+        <p style={{ fontSize: 13, color: "#666", marginBottom: 8 }}>
+          Quantos dos {dias.length} dia(s) do período cada operador lançou pelo menos um registro.
+        </p>
+        <GraficoDiasLancados linhas={diasLancadosPorOperador} />
       </div>
 
       <div style={{ marginBottom: 28 }}>
