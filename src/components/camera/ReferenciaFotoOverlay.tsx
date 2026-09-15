@@ -9,7 +9,7 @@ interface Props {
   onEscolherGaleria: () => void;
 }
 
-const SEGUNDOS_INICIAIS = 5;
+const SEGUNDOS_INICIAIS = 2;
 
 export default function ReferenciaFotoOverlay({ referencia, onProsseguir, onEscolherGaleria }: Props) {
   const [segundos, setSegundos] = useState(SEGUNDOS_INICIAIS);
