@@ -641,6 +641,8 @@ interface CavaTradoLinha {
   data: string;
   equipeId: number;
   quantidadeCavas: number;
+  obrasAtribuidas: number;
+  obrasTentativas: number;
   observacao: string | null;
 }
 
@@ -717,6 +719,8 @@ function AbaCavasTrado({ dataInicio, dataFim, cpfAdmin }: { dataInicio: string; 
   const [formData, setFormData] = useState("");
   const [formEquipeId, setFormEquipeId] = useState("");
   const [formQuantidade, setFormQuantidade] = useState("");
+  const [formObrasAtribuidas, setFormObrasAtribuidas] = useState("");
+  const [formObrasTentativas, setFormObrasTentativas] = useState("");
   const [formObservacao, setFormObservacao] = useState("");
   const [salvando, setSalvando] = useState(false);
 
@@ -755,12 +759,22 @@ function AbaCavasTrado({ dataInicio, dataFim, cpfAdmin }: { dataInicio: string; 
   async function salvar() {
     setErro(null);
     const quantidade = Number(formQuantidade);
+    const obrasAtribuidas = Number(formObrasAtribuidas || 0);
+    const obrasTentativas = Number(formObrasTentativas || 0);
     if (!formData || !equipeIdSelecionado) {
       setErro("Escolha a data e a equipe.");
       return;
     }
     if (!Number.isInteger(quantidade) || quantidade < 0) {
       setErro("Quantidade de cavas inválida.");
+      return;
+    }
+    if (!Number.isInteger(obrasAtribuidas) || obrasAtribuidas < 0 || !Number.isInteger(obrasTentativas) || obrasTentativas < 0) {
+      setErro("Obras atribuídas/com trado usado inválidas.");
+      return;
+    }
+    if (obrasAtribuidas > 0 && obrasTentativas > obrasAtribuidas) {
+      setErro("Obras com trado usado não pode ser maior que obras atribuídas.");
       return;
     }
 
@@ -773,6 +787,8 @@ function AbaCavasTrado({ dataInicio, dataFim, cpfAdmin }: { dataInicio: string; 
         data: formData,
         equipeId: Number(equipeIdSelecionado),
         quantidadeCavas: quantidade,
+        obrasAtribuidas,
+        obrasTentativas,
         observacao: formObservacao || null,
       }),
     });
@@ -784,6 +800,8 @@ function AbaCavasTrado({ dataInicio, dataFim, cpfAdmin }: { dataInicio: string; 
     }
 
     setFormQuantidade("");
+    setFormObrasAtribuidas("");
+    setFormObrasTentativas("");
     setFormObservacao("");
     await carregar();
   }
@@ -812,8 +830,19 @@ function AbaCavasTrado({ dataInicio, dataFim, cpfAdmin }: { dataInicio: string; 
     return grupo.map((eq) => {
       const doTime = lista.filter((l) => l.equipeId === eq.id);
       const totalCavas = doTime.reduce((soma, l) => soma + l.quantidadeCavas, 0);
+      const totalObrasAtribuidas = doTime.reduce((soma, l) => soma + l.obrasAtribuidas, 0);
+      const totalObrasTentativas = doTime.reduce((soma, l) => soma + l.obrasTentativas, 0);
       const dias = doTime.length;
-      return { ...eq, totalCavas, dias, mediaPorDia: dias > 0 ? totalCavas / dias : 0 };
+      return {
+        ...eq,
+        totalCavas,
+        totalObrasAtribuidas,
+        totalObrasTentativas,
+        dias,
+        mediaPorDia: dias > 0 ? totalCavas / dias : 0,
+        pctAproveitamento: totalObrasTentativas > 0 ? (totalCavas / totalObrasTentativas) * 100 : null,
+        pctDoTotalDeObras: totalObrasAtribuidas > 0 ? (totalCavas / totalObrasAtribuidas) * 100 : null,
+      };
     });
   }
 
@@ -880,6 +909,30 @@ function AbaCavasTrado({ dataInicio, dataFim, cpfAdmin }: { dataInicio: string; 
             </select>
           </label>
           <label style={{ fontSize: 13, color: "#666" }}>
+            Obras atribuídas
+            <br />
+            <input
+              className="campo-grande"
+              style={{ width: 120, padding: 10, marginTop: 4 }}
+              type="number"
+              min={0}
+              value={formObrasAtribuidas}
+              onChange={(e) => setFormObrasAtribuidas(e.target.value)}
+            />
+          </label>
+          <label style={{ fontSize: 13, color: "#666" }}>
+            Obras c/ trado usado
+            <br />
+            <input
+              className="campo-grande"
+              style={{ width: 120, padding: 10, marginTop: 4 }}
+              type="number"
+              min={0}
+              value={formObrasTentativas}
+              onChange={(e) => setFormObrasTentativas(e.target.value)}
+            />
+          </label>
+          <label style={{ fontSize: 13, color: "#666" }}>
             Qtd. de cavas
             <br />
             <input
@@ -908,6 +961,8 @@ function AbaCavasTrado({ dataInicio, dataFim, cpfAdmin }: { dataInicio: string; 
         </div>
         <p style={{ fontSize: 12, color: "#888", marginTop: 8 }}>
           Já existe um lançamento pra essa equipe nesse dia? Salvar de novo substitui o número.
+          &quot;Obras atribuídas&quot; e &quot;c/ trado usado&quot; são opcionais (ficam 0 se deixar em branco) — preencha
+          pra ver o % de aproveitamento por equipe.
         </p>
       </div>
 
@@ -1082,6 +1137,57 @@ function AbaCavasTrado({ dataInicio, dataFim, cpfAdmin }: { dataInicio: string; 
       </div>
 
       <div style={{ marginBottom: 28 }}>
+        <h3 style={{ color: "#1B4FA2", fontSize: 17, marginBottom: 8 }}>Aproveitamento por equipe</h3>
+        <p style={{ fontSize: 13, color: "#666", marginBottom: 8 }}>
+          % Aproveitamento = cavas feitas ÷ obras onde a equipe tentou usar o trado (compara equipes de forma justa,
+          sem depender de quantas obras cada uma recebeu). % do total de obras = cavas feitas ÷ todas as obras
+          atribuídas no período.
+        </p>
+        <div style={{ overflowX: "auto" }}>
+          <table style={{ width: "100%", borderCollapse: "collapse" }}>
+            <thead>
+              <tr style={{ textAlign: "left", borderBottom: "2px solid #e0e0e0" }}>
+                <th style={{ padding: 8 }}>Responsável</th>
+                <th style={{ padding: 8 }}>Equipamento</th>
+                <th style={{ padding: 8 }}>Obras no período</th>
+                <th style={{ padding: 8 }}>Obras c/ trado usado</th>
+                <th style={{ padding: 8 }}>Cavas feitas</th>
+                <th style={{ padding: 8 }}>% Aproveitamento</th>
+                <th style={{ padding: 8 }}>% do total de obras</th>
+              </tr>
+            </thead>
+            <tbody>
+              {[...resumoNovo, ...resumoAntigo]
+                .slice()
+                .sort((a, b) => (b.pctAproveitamento ?? -1) - (a.pctAproveitamento ?? -1))
+                .map((eq) => (
+                  <tr key={eq.id} style={{ borderBottom: "1px solid #eee" }}>
+                    <td style={{ padding: 8 }}>{eq.responsavel ?? eq.cidade}</td>
+                    <td style={{ padding: 8 }}>{LABEL_TIPO[eq.tipoEquipamento]}</td>
+                    <td style={{ padding: 8 }}>{eq.totalObrasAtribuidas}</td>
+                    <td style={{ padding: 8 }}>{eq.totalObrasTentativas}</td>
+                    <td style={{ padding: 8 }}>{eq.totalCavas}</td>
+                    <td style={{ padding: 8, fontWeight: 700, color: eq.pctAproveitamento === null ? "#bbb" : "#1B4FA2" }}>
+                      {eq.pctAproveitamento === null ? "—" : `${eq.pctAproveitamento.toFixed(0)}%`}
+                    </td>
+                    <td style={{ padding: 8, color: eq.pctDoTotalDeObras === null ? "#bbb" : undefined }}>
+                      {eq.pctDoTotalDeObras === null ? "—" : `${eq.pctDoTotalDeObras.toFixed(0)}%`}
+                    </td>
+                  </tr>
+                ))}
+              {equipesAtivas.length === 0 && (
+                <tr>
+                  <td style={{ padding: 8 }} colSpan={7}>
+                    Nenhuma equipe ativa cadastrada.
+                  </td>
+                </tr>
+              )}
+            </tbody>
+          </table>
+        </div>
+      </div>
+
+      <div style={{ marginBottom: 28 }}>
         <h3 style={{ color: "#1B4FA2", fontSize: 17, marginBottom: 8 }}>Lançamentos no período</h3>
         {carregando && <p>Carregando...</p>}
         {!carregando && (
@@ -1091,6 +1197,8 @@ function AbaCavasTrado({ dataInicio, dataFim, cpfAdmin }: { dataInicio: string; 
                 <tr style={{ textAlign: "left", borderBottom: "2px solid #e0e0e0" }}>
                   <th style={{ padding: 8 }}>Data</th>
                   <th style={{ padding: 8 }}>Equipe</th>
+                  <th style={{ padding: 8 }}>Obras atrib.</th>
+                  <th style={{ padding: 8 }}>Obras c/trado</th>
                   <th style={{ padding: 8 }}>Cavas</th>
                   <th style={{ padding: 8 }}>Observação</th>
                   <th style={{ padding: 8 }}></th>
@@ -1103,6 +1211,8 @@ function AbaCavasTrado({ dataInicio, dataFim, cpfAdmin }: { dataInicio: string; 
                     <tr key={l.id} style={{ borderBottom: "1px solid #eee" }}>
                       <td style={{ padding: 8 }}>{formatarDataCurta(l.data)}</td>
                       <td style={{ padding: 8 }}>{eq ? eq.cidade : `Equipe #${l.equipeId}`}</td>
+                      <td style={{ padding: 8 }}>{l.obrasAtribuidas || "—"}</td>
+                      <td style={{ padding: 8 }}>{l.obrasTentativas || "—"}</td>
                       <td style={{ padding: 8 }}>{l.quantidadeCavas}</td>
                       <td style={{ padding: 8 }}>{l.observacao ?? "—"}</td>
                       <td style={{ padding: 8 }}>
@@ -1118,7 +1228,7 @@ function AbaCavasTrado({ dataInicio, dataFim, cpfAdmin }: { dataInicio: string; 
                 })}
                 {linhasOrdenadas.length === 0 && (
                   <tr>
-                    <td style={{ padding: 8 }} colSpan={5}>
+                    <td style={{ padding: 8 }} colSpan={7}>
                       Nenhum lançamento no período.
                     </td>
                   </tr>

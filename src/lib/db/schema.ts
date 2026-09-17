@@ -85,6 +85,13 @@ export const cavasTrado = pgTable(
       .notNull()
       .references(() => equipesTrado.id),
     quantidadeCavas: integer("quantidade_cavas").notNull(),
+    // Pra medir aproveitamento (não só volume): quantas obras a equipe recebeu
+    // no dia, e de quantas dessas ela efetivamente foi tentar escavar com o
+    // trado. quantidadeCavas de fato feitas já mede o resultado; estas duas
+    // dão o "de quanto" — % aproveitamento = cavas / obrasTentativas,
+    // % do total de obras = cavas / obrasAtribuidas.
+    obrasAtribuidas: integer("obras_atribuidas").notNull().default(0),
+    obrasTentativas: integer("obras_tentativas").notNull().default(0),
     observacao: text("observacao"),
     criadoPor: text("criado_por").notNull(),
     criadoEm: timestamp("criado_em", { withTimezone: true }).notNull().defaultNow(),
