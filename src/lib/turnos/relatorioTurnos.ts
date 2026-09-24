@@ -1,7 +1,7 @@
 import { eq } from "drizzle-orm";
 import { db } from "@/lib/db/client";
 import { turnosAbertos, registros } from "@/lib/db/schema";
-import { OPERADORES } from "@/lib/config/operadores";
+import { OPERADORES, OPERADORES_EXCLUIDOS_INDICADORES } from "@/lib/config/operadores";
 
 export interface OperadorRelatorio {
   cpf: string;
@@ -24,7 +24,9 @@ export function hojeBR(): string {
 }
 
 export async function obterRelatorioTurnos(data: string): Promise<RelatorioTurnos> {
-  const operadoresCampo = OPERADORES.filter((o) => !o.admin);
+  const operadoresCampo = OPERADORES.filter(
+    (o) => !o.admin && !OPERADORES_EXCLUIDOS_INDICADORES.includes(o.nome)
+  );
   const abertosNoDia = await db.select().from(turnosAbertos).where(eq(turnosAbertos.data, data));
   // Também conta quem já tem registro (cava) completo naquele dia — cobre o
   // caso raro de falta de sinal bem no momento da 1ª foto, quando o app não

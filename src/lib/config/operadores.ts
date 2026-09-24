@@ -27,6 +27,11 @@ export const OPERADORES: Operador[] = [
   { cpf: "71200297466", nome: "LARA GABRIELLA BEZERRA", categoria: null, admin: true },
 ];
 
+// Operadores que continuam podendo logar e registrar normalmente, mas não
+// devem contar nos indicadores por operador do painel (afastado, mudou de
+// função etc.) — não mexe no login nem nos registros já lançados.
+export const OPERADORES_EXCLUIDOS_INDICADORES: string[] = ["IRAILDO DA CRUZ REIS"];
+
 export function buscarOperador(cpf: string): Operador | undefined {
   return OPERADORES.find((o) => o.cpf === cpf);
 }

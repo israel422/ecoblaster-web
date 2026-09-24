@@ -2,7 +2,7 @@
 
 import { useEffect, useState } from "react";
 import { TIPOS_CAVA } from "@/lib/config/tiposCava";
-import { OPERADORES } from "@/lib/config/operadores";
+import { OPERADORES, OPERADORES_EXCLUIDOS_INDICADORES } from "@/lib/config/operadores";
 import { MOTIVOS_JUSTIFICATIVA } from "@/lib/config/motivosJustificativa";
 
 interface RegistroLinha {
@@ -244,7 +244,9 @@ function TabelaAgregada({ titulo, colunaChave, linhas }: { titulo: string; colun
   );
 }
 
-const OPERADORES_CAMPO = OPERADORES.filter((o) => !o.admin).sort((a, b) => a.nome.localeCompare(b.nome));
+const OPERADORES_CAMPO = OPERADORES.filter(
+  (o) => !o.admin && !OPERADORES_EXCLUIDOS_INDICADORES.includes(o.nome)
+).sort((a, b) => a.nome.localeCompare(b.nome));
 
 function diasNoIntervalo(inicio: string, fim: string): string[] {
   const dias: string[] = [];
@@ -1376,7 +1378,14 @@ export default function PainelIndicadores({ cpfAdmin, onVoltar }: { cpfAdmin: st
             </div>
           </div>
 
-          <TabelaAgregada titulo="Por Operador" colunaChave="Operador" linhas={agregarPor(lista, "operador")} />
+          <TabelaAgregada
+            titulo="Por Operador"
+            colunaChave="Operador"
+            linhas={agregarPor(
+              lista.filter((r) => !OPERADORES_EXCLUIDOS_INDICADORES.includes(r.operador)),
+              "operador"
+            )}
+          />
           <TabelaAgregada titulo="Por Tipo de Cava" colunaChave="Tipo de Cava" linhas={agregarPor(lista, "tipoCava")} />
 
           <div style={{ marginBottom: 28 }}>
@@ -1417,7 +1426,10 @@ export default function PainelIndicadores({ cpfAdmin, onVoltar }: { cpfAdmin: st
             titulo="Média de Cavas por Operador"
             colunaChave="Operador"
             descricao="Total de cavas dividido pelos dias com registro de cada operador, no período selecionado."
-            linhas={agregarMediaCavaPor(lista, "operador")}
+            linhas={agregarMediaCavaPor(
+              lista.filter((r) => !OPERADORES_EXCLUIDOS_INDICADORES.includes(r.operador)),
+              "operador"
+            )}
           />
         </>
       )}
