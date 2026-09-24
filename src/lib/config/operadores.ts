@@ -15,7 +15,6 @@ export const OPERADORES: Operador[] = [
   { cpf: "04917892546", nome: "JOSSIEL MARTINS MESQUITA", categoria: "Blaster", admin: false },
   { cpf: "70690623461", nome: "GABRIEL FERREIRA DOS SANTOS", categoria: "Retroescavadeira", admin: false },
   { cpf: "02897981598", nome: "IRAILDO DA CRUZ REIS", categoria: "Retroescavadeira", admin: false },
-  { cpf: "13579062425", nome: "JAILSON ALVES DA SILVA", categoria: "Retroescavadeira", admin: false },
   { cpf: "11799082440", nome: "GHERMERSON PEREIRA BARBOSA", categoria: "Retroescavadeira", admin: false },
   { cpf: "07658074403", nome: "ANTONIO CARLOS DA SILVA", categoria: "Retroescavadeira", admin: false },
   { cpf: "16272758430", nome: "GABRIEL ANDRADE FERREIRA", categoria: "Retroescavadeira", admin: false },
@@ -31,6 +30,14 @@ export const OPERADORES: Operador[] = [
 // devem contar nos indicadores por operador do painel (afastado, mudou de
 // função etc.) — não mexe no login nem nos registros já lançados.
 export const OPERADORES_EXCLUIDOS_INDICADORES: string[] = ["IRAILDO DA CRUZ REIS"];
+
+// Desligados da empresa — fora de OPERADORES (não logam mais, não entram em
+// nenhum indicador nem no relatório de turno). Ficam guardados aqui, com o
+// mesmo CPF/categoria, só pra reativar rápido: é mover de volta pra
+// OPERADORES se precisar resgatar.
+export const OPERADORES_INATIVOS: Operador[] = [
+  { cpf: "13579062425", nome: "JAILSON ALVES DA SILVA", categoria: "Retroescavadeira", admin: false },
+];
 
 export function buscarOperador(cpf: string): Operador | undefined {
   return OPERADORES.find((o) => o.cpf === cpf);
