@@ -850,6 +850,8 @@ function AbaCavasTrado({ dataInicio, dataFim, cpfAdmin }: { dataInicio: string; 
         dias,
         mediaPorDia: dias > 0 ? totalCavas / dias : 0,
         pctSucesso: totalObrasTentou > 0 ? (totalObrasConcluidas / totalObrasTentou) * 100 : null,
+        pctNaoConseguiu:
+          totalObrasTentou > 0 ? (Math.max(totalObrasTentou - totalObrasConcluidas, 0) / totalObrasTentou) * 100 : null,
       };
     });
   }
@@ -1159,6 +1161,7 @@ function AbaCavasTrado({ dataInicio, dataFim, cpfAdmin }: { dataInicio: string; 
                 <th style={{ padding: 8 }}>Obras c/ trado usado</th>
                 <th style={{ padding: 8 }}>Obras concluídas</th>
                 <th style={{ padding: 8 }}>Não conseguiu fazer</th>
+                <th style={{ padding: 8 }}>% não conseguiu</th>
                 <th style={{ padding: 8 }}>Cavas feitas</th>
                 <th style={{ padding: 8 }}>% de sucesso</th>
               </tr>
@@ -1176,6 +1179,9 @@ function AbaCavasTrado({ dataInicio, dataFim, cpfAdmin }: { dataInicio: string; 
                     <td style={{ padding: 8, color: eq.totalObrasNaoConseguiu > 0 ? "#d93025" : undefined }}>
                       {eq.totalObrasNaoConseguiu}
                     </td>
+                    <td style={{ padding: 8, color: eq.pctNaoConseguiu === null ? "#bbb" : "#d93025" }}>
+                      {eq.pctNaoConseguiu === null ? "—" : `${eq.pctNaoConseguiu.toFixed(0)}%`}
+                    </td>
                     <td style={{ padding: 8 }}>{eq.totalCavas}</td>
                     <td style={{ padding: 8, fontWeight: 700, color: eq.pctSucesso === null ? "#bbb" : "#1B4FA2" }}>
                       {eq.pctSucesso === null ? "—" : `${eq.pctSucesso.toFixed(0)}%`}
@@ -1184,7 +1190,7 @@ function AbaCavasTrado({ dataInicio, dataFim, cpfAdmin }: { dataInicio: string; 
                 ))}
               {equipesAtivas.length === 0 && (
                 <tr>
-                  <td style={{ padding: 8 }} colSpan={7}>
+                  <td style={{ padding: 8 }} colSpan={8}>
                     Nenhuma equipe ativa cadastrada.
                   </td>
                 </tr>
