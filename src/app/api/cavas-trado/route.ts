@@ -36,9 +36,11 @@ export async function POST(req: Request) {
   const data = body?.data;
   const equipeId = Number(body?.equipeId);
   const quantidadeCavas = Number(body?.quantidadeCavas);
+  // obrasAtribuidas = obras que a equipe tentou fazer com o trado no dia;
+  // obrasTentativas = de quantas dessas ela conseguiu concluir a cava (nomes
+  // de coluna antigos, significado real é esse — ver comentário no schema).
   const obrasAtribuidas = Number(body?.obrasAtribuidas ?? 0);
   const obrasTentativas = Number(body?.obrasTentativas ?? 0);
-  const obrasConcluidas = Number(body?.obrasConcluidas ?? 0);
   const observacao = body?.observacao ? String(body.observacao).trim() : null;
 
   if (!data || !Number.isInteger(equipeId)) {
@@ -47,25 +49,12 @@ export async function POST(req: Request) {
   if (!Number.isInteger(quantidadeCavas) || quantidadeCavas < 0) {
     return NextResponse.json({ sucesso: false, erro: "Quantidade de cavas inválida" }, { status: 400 });
   }
-  if (
-    !Number.isInteger(obrasAtribuidas) ||
-    obrasAtribuidas < 0 ||
-    !Number.isInteger(obrasTentativas) ||
-    obrasTentativas < 0 ||
-    !Number.isInteger(obrasConcluidas) ||
-    obrasConcluidas < 0
-  ) {
-    return NextResponse.json({ sucesso: false, erro: "Obras atribuídas/tentativas/concluídas inválidas" }, { status: 400 });
+  if (!Number.isInteger(obrasAtribuidas) || obrasAtribuidas < 0 || !Number.isInteger(obrasTentativas) || obrasTentativas < 0) {
+    return NextResponse.json({ sucesso: false, erro: "Obras c/ trado usado/concluídas inválidas" }, { status: 400 });
   }
   if (obrasTentativas > obrasAtribuidas && obrasAtribuidas > 0) {
     return NextResponse.json(
-      { sucesso: false, erro: "Obras com trado usado não pode ser maior que obras atribuídas" },
-      { status: 400 }
-    );
-  }
-  if (obrasConcluidas > obrasTentativas) {
-    return NextResponse.json(
-      { sucesso: false, erro: "Obras concluídas não pode ser maior que obras com trado usado" },
+      { sucesso: false, erro: "Obras concluídas não pode ser maior que obras c/ trado usado" },
       { status: 400 }
     );
   }
@@ -78,18 +67,10 @@ export async function POST(req: Request) {
   try {
     await db
       .insert(cavasTrado)
-      .values({ data, equipeId, quantidadeCavas, obrasAtribuidas, obrasTentativas, obrasConcluidas, observacao, criadoPor: cpfAdmin })
+      .values({ data, equipeId, quantidadeCavas, obrasAtribuidas, obrasTentativas, observacao, criadoPor: cpfAdmin })
       .onConflictDoUpdate({
         target: [cavasTrado.equipeId, cavasTrado.data],
-        set: {
-          quantidadeCavas,
-          obrasAtribuidas,
-          obrasTentativas,
-          obrasConcluidas,
-          observacao,
-          criadoPor: cpfAdmin,
-          criadoEm: new Date(),
-        },
+        set: { quantidadeCavas, obrasAtribuidas, obrasTentativas, observacao, criadoPor: cpfAdmin, criadoEm: new Date() },
       });
 
     return NextResponse.json({ sucesso: true });
