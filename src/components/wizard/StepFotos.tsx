@@ -34,6 +34,8 @@ export default function StepFotos({
   const fotoIndexRef = useRef<number>(-1);
   const origemRef = useRef<"camera" | "galeria">("camera");
   const gpsRef = useRef<{ lat: number; lon: number } | null>(null);
+  // GPS da foto que está na pré-visualização (vai junto pro registro ao confirmar).
+  const previewGpsRef = useRef<{ lat: number; lon: number } | null>(null);
   const [previewBlob, setPreviewBlob] = useState<Blob | null>(null);
   const [idxParaApagar, setIdxParaApagar] = useState<number | null>(null);
   const [referenciaParaIdx, setReferenciaParaIdx] = useState<number | null>(null);
@@ -81,6 +83,7 @@ export default function StepFotos({
     if (!item) return;
 
     const gps = gpsRef.current;
+    previewGpsRef.current = gps;
     const gpsStr = gps ? `GPS: ${gps.lat.toFixed(5)}, ${gps.lon.toFixed(5)}` : "GPS: indisponível";
 
     const blob = await stampPhoto(file, {
@@ -99,7 +102,10 @@ export default function StepFotos({
   function confirmarFoto() {
     if (!previewBlob) return;
     const idx = fotoIndexRef.current;
-    const novaLista = fotos.map((f, i) => (i === idx ? { ...f, blob: previewBlob } : f));
+    const gps = previewGpsRef.current;
+    const novaLista = fotos.map((f, i) =>
+      i === idx ? { ...f, blob: previewBlob, lat: gps?.lat, lon: gps?.lon } : f
+    );
     onFotosChange(novaLista);
     setPreviewBlob(null);
   }
@@ -113,7 +119,7 @@ export default function StepFotos({
   function apagarFotoConfirmado() {
     const idx = idxParaApagar;
     if (idx === null) return;
-    const novaLista = fotos.map((f, i) => (i === idx ? { ...f, blob: undefined } : f));
+    const novaLista = fotos.map((f, i) => (i === idx ? { ...f, blob: undefined, lat: undefined, lon: undefined } : f));
     onFotosChange(novaLista);
     setIdxParaApagar(null);
   }

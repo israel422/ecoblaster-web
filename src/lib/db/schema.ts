@@ -11,7 +11,8 @@ export const registros = pgTable("registros", {
   operador: text("operador").notNull(),
   cpf: text("cpf").notNull(),
   observacao: text("observacao"),
-  // [{ cava: number, fotoNum: number, label: string, url: string }]
+  // [{ cava: number, fotoNum: number, label: string, url: string, lat?: number, lon?: number }]
+  // lat/lon = GPS do celular na hora da foto (só registros a partir de out/2026).
   fotos: jsonb("fotos").notNull(),
   // Liga todos os registros (1 por cava) do mesmo turno — mesmo valor do
   // turnos_abertos.id daquela sessão. Usado pra aplicar a observação em todas

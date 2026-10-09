@@ -5,6 +5,8 @@ export const fotoItemSchema = z.object({
   fotoNum: z.number().int().positive(),
   label: z.string().min(1),
   url: z.string().url(),
+  lat: z.number().min(-90).max(90).optional(),
+  lon: z.number().min(-180).max(180).optional(),
 });
 
 export const registroSchema = z.object({

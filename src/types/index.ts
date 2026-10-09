@@ -20,6 +20,10 @@ export interface FotoItem {
   blob?: Blob;
   /** Preenchido depois do upload bem-sucedido pro Vercel Blob. */
   uploadedUrl?: string;
+  /** GPS do celular no momento da foto (ausente se o GPS não respondeu a tempo).
+   *  Base do mapa de incidência de rocha por localização. */
+  lat?: number;
+  lon?: number;
 }
 
 export interface DadosRegistro {

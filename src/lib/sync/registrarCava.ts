@@ -44,7 +44,13 @@ export async function registrarCava(
         operador: dados.operador,
         cpf: dados.cpf,
         observacao: "",
-        fotos: fotosCava.map((f) => ({ cava: f.cava, fotoNum: f.fotoNum, label: f.label, url: f.uploadedUrl! })),
+        fotos: fotosCava.map((f) => ({
+          cava: f.cava,
+          fotoNum: f.fotoNum,
+          label: f.label,
+          url: f.uploadedUrl!,
+          ...(f.lat != null && f.lon != null ? { lat: f.lat, lon: f.lon } : {}),
+        })),
         turnoServerId: dados.turnoServerId,
       }),
     });
