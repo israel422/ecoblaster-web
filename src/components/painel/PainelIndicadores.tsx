@@ -20,19 +20,30 @@ interface LinhaAgregada {
   registros: number;
   cavas: number;
   fotos: number;
+  obras: number; // obras diferentes
+  dias: number; // dias com pelo menos um registro
+  mediaDia: number; // cavas ÷ dias com registro
 }
 
+const fmtMedia = (v: number) => v.toLocaleString("pt-BR", { minimumFractionDigits: 1, maximumFractionDigits: 1 });
+
 function agregarPor(lista: RegistroLinha[], campo: "operador" | "tipoCava" | "obra"): LinhaAgregada[] {
-  const mapa = new Map<string, LinhaAgregada>();
+  const mapa = new Map<string, LinhaAgregada & { _obras: Set<string>; _dias: Set<string> }>();
   for (const r of lista) {
     const chave = r[campo];
-    const atual = mapa.get(chave) || { chave, registros: 0, cavas: 0, fotos: 0 };
+    const atual = mapa.get(chave) || {
+      chave, registros: 0, cavas: 0, fotos: 0, obras: 0, dias: 0, mediaDia: 0, _obras: new Set<string>(), _dias: new Set<string>(),
+    };
     atual.registros += 1;
     atual.cavas += r.totalCavas;
     atual.fotos += r.fotos.length;
+    atual._obras.add(r.obra);
+    atual._dias.add(r.data);
     mapa.set(chave, atual);
   }
-  return Array.from(mapa.values()).sort((a, b) => b.cavas - a.cavas);
+  return Array.from(mapa.values())
+    .map(({ _obras, _dias, ...l }) => ({ ...l, obras: _obras.size, dias: _dias.size, mediaDia: _dias.size ? l.cavas / _dias.size : 0 }))
+    .sort((a, b) => b.cavas - a.cavas);
 }
 
 const CORES_BARRA = ["#1a73e8", "#1e8e3e", "#e8710a", "#9334e6", "#d93025", "#12939a", "#e52592", "#795548"];
@@ -226,6 +237,9 @@ function TabelaAgregada({ titulo, colunaChave, linhas }: { titulo: string; colun
               <th style={{ padding: 8 }}>Registros</th>
               <th style={{ padding: 8 }}>Cavas</th>
               <th style={{ padding: 8 }}>Fotos</th>
+              <th style={{ padding: 8 }}>Obras</th>
+              <th style={{ padding: 8 }}>Dias</th>
+              <th style={{ padding: 8 }} title="Cavas ÷ dias com registro">Média/dia</th>
             </tr>
           </thead>
           <tbody>
@@ -235,6 +249,9 @@ function TabelaAgregada({ titulo, colunaChave, linhas }: { titulo: string; colun
                 <td style={{ padding: 8 }}>{l.registros}</td>
                 <td style={{ padding: 8 }}>{l.cavas}</td>
                 <td style={{ padding: 8 }}>{l.fotos}</td>
+                <td style={{ padding: 8 }}>{l.obras}</td>
+                <td style={{ padding: 8 }}>{l.dias}</td>
+                <td style={{ padding: 8, fontWeight: 700 }}>{fmtMedia(l.mediaDia)}</td>
               </tr>
             ))}
           </tbody>
@@ -1261,6 +1278,7 @@ export default function PainelIndicadores({ cpfAdmin, onVoltar }: { cpfAdmin: st
   const [carregando, setCarregando] = useState(false);
   const [lista, setLista] = useState<RegistroLinha[] | null>(null);
   const [aba, setAba] = useState<"indicadores" | "frequencia" | "trado">("indicadores");
+  const [funcionario, setFuncionario] = useState(""); // "" = todos
 
   async function buscar() {
     setCarregando(true);
@@ -1273,9 +1291,15 @@ export default function PainelIndicadores({ cpfAdmin, onVoltar }: { cpfAdmin: st
     setCarregando(false);
   }
 
-  const totalRegistros = lista?.length ?? 0;
-  const totalCavas = lista?.reduce((soma, r) => soma + r.totalCavas, 0) ?? 0;
-  const totalFotos = lista?.reduce((soma, r) => soma + r.fotos.length, 0) ?? 0;
+  // Filtro por funcionário vale para todos os indicadores e para a frequência.
+  const listaVis = (lista ?? []).filter((r) => !funcionario || r.operador === funcionario);
+  const operadoresNaLista = Array.from(new Set((lista ?? []).map((r) => r.operador))).sort();
+  const totalRegistros = listaVis.length;
+  const totalCavas = listaVis.reduce((soma, r) => soma + r.totalCavas, 0);
+  const totalFotos = listaVis.reduce((soma, r) => soma + r.fotos.length, 0);
+  const totalObras = new Set(listaVis.map((r) => r.obra)).size;
+  const diasComRegistro = new Set(listaVis.map((r) => r.data)).size;
+  const mediaPorDia = diasComRegistro ? totalCavas / diasComRegistro : 0;
 
   return (
     <div style={{ maxWidth: 1000, margin: "0 auto", padding: 24 }}>
@@ -1314,6 +1338,21 @@ export default function PainelIndicadores({ cpfAdmin, onVoltar }: { cpfAdmin: st
         <button className="btn-avancar" style={{ flex: "0 0 auto", padding: "12px 20px", alignSelf: "flex-end" }} onClick={buscar}>
           Buscar
         </button>
+        <label style={{ fontSize: 13, color: "#666" }}>
+          Funcionário
+          <br />
+          <select
+            className="campo-grande"
+            style={{ width: 260, padding: 12, marginTop: 4 }}
+            value={funcionario}
+            onChange={(e) => setFuncionario(e.target.value)}
+          >
+            <option value="">Todos</option>
+            {(operadoresNaLista.length ? operadoresNaLista : OPERADORES.map((o) => o.nome).sort()).map((nome) => (
+              <option key={nome} value={nome}>{nome}</option>
+            ))}
+          </select>
+        </label>
       </div>
 
       <div style={{ display: "flex", gap: 8, marginBottom: 20, borderBottom: "1px solid #e0e0e0" }}>
@@ -1369,7 +1408,7 @@ export default function PainelIndicadores({ cpfAdmin, onVoltar }: { cpfAdmin: st
       {aba !== "trado" && carregando && <p>Carregando...</p>}
 
       {lista && !carregando && aba === "frequencia" && (
-        <TabelaFrequencia lista={lista} dataInicio={dataInicio} dataFim={dataFim} cpfAdmin={cpfAdmin} />
+        <TabelaFrequencia lista={listaVis} dataInicio={dataInicio} dataFim={dataFim} cpfAdmin={cpfAdmin} />
       )}
 
       {lista && !carregando && aba === "indicadores" && (
@@ -1387,21 +1426,37 @@ export default function PainelIndicadores({ cpfAdmin, onVoltar }: { cpfAdmin: st
               <div className="operador-nome">{totalFotos}</div>
               <div className="operador-label">Fotos</div>
             </div>
+            <div className="operador-card" style={{ flex: "1 1 140px" }}>
+              <div className="operador-nome">{totalObras}</div>
+              <div className="operador-label">Obras</div>
+            </div>
+            <div className="operador-card" style={{ flex: "1 1 140px" }} title="Cavas ÷ dias com registro">
+              <div className="operador-nome">{fmtMedia(mediaPorDia)}</div>
+              <div className="operador-label">Média/dia ({diasComRegistro} dias)</div>
+            </div>
           </div>
+          {funcionario && (
+            <p style={{ color: "#1B4FA2", fontWeight: 600, margin: "-12px 0 20px" }}>
+              Mostrando só {funcionario} ·{" "}
+              <button style={{ border: "none", background: "none", color: "#1a73e8", cursor: "pointer", padding: 0 }} onClick={() => setFuncionario("")}>
+                ver todos
+              </button>
+            </p>
+          )}
 
           <TabelaAgregada
             titulo="Por Operador"
             colunaChave="Operador"
             linhas={agregarPor(
-              lista.filter((r) => !OPERADORES_EXCLUIDOS_INDICADORES.includes(r.operador)),
+              listaVis.filter((r) => !OPERADORES_EXCLUIDOS_INDICADORES.includes(r.operador)),
               "operador"
             )}
           />
-          <TabelaAgregada titulo="Por Tipo de Cava" colunaChave="Tipo de Cava" linhas={agregarPor(lista, "tipoCava")} />
+          <TabelaAgregada titulo="Por Tipo de Cava" colunaChave="Tipo de Cava" linhas={agregarPor(listaVis, "tipoCava")} />
 
           <div style={{ marginBottom: 28 }}>
             <h3 style={{ color: "#1B4FA2", fontSize: 17, marginBottom: 8 }}>Por Obra</h3>
-            <GraficoBarrasEmpilhadasPorTipo linhas={agregarObraPorTipo(lista)} />
+            <GraficoBarrasEmpilhadasPorTipo linhas={agregarObraPorTipo(listaVis)} />
             <div style={{ overflowX: "auto" }}>
               <table style={{ width: "100%", borderCollapse: "collapse" }}>
                 <thead>
@@ -1410,15 +1465,19 @@ export default function PainelIndicadores({ cpfAdmin, onVoltar }: { cpfAdmin: st
                     <th style={{ padding: 8 }}>Registros</th>
                     <th style={{ padding: 8 }}>Cavas</th>
                     <th style={{ padding: 8 }}>Fotos</th>
+                    <th style={{ padding: 8 }}>Dias</th>
+                    <th style={{ padding: 8 }} title="Cavas ÷ dias com registro">Média/dia</th>
                   </tr>
                 </thead>
                 <tbody>
-                  {agregarPor(lista, "obra").map((l) => (
+                  {agregarPor(listaVis, "obra").map((l) => (
                     <tr key={l.chave} style={{ borderBottom: "1px solid #eee" }}>
                       <td style={{ padding: 8 }}>{l.chave}</td>
                       <td style={{ padding: 8 }}>{l.registros}</td>
                       <td style={{ padding: 8 }}>{l.cavas}</td>
                       <td style={{ padding: 8 }}>{l.fotos}</td>
+                      <td style={{ padding: 8 }}>{l.dias}</td>
+                      <td style={{ padding: 8, fontWeight: 700 }}>{fmtMedia(l.mediaDia)}</td>
                     </tr>
                   ))}
                 </tbody>
@@ -1430,7 +1489,7 @@ export default function PainelIndicadores({ cpfAdmin, onVoltar }: { cpfAdmin: st
             titulo="Média de Cavas por Obra"
             colunaChave="Obra"
             descricao="Total de cavas dividido pelos dias com registro em cada obra, no período selecionado."
-            linhas={agregarMediaCavaPor(lista, "obra")}
+            linhas={agregarMediaCavaPor(listaVis, "obra")}
           />
 
           <TabelaMediaCavas
@@ -1438,7 +1497,7 @@ export default function PainelIndicadores({ cpfAdmin, onVoltar }: { cpfAdmin: st
             colunaChave="Operador"
             descricao="Total de cavas dividido pelos dias com registro de cada operador, no período selecionado."
             linhas={agregarMediaCavaPor(
-              lista.filter((r) => !OPERADORES_EXCLUIDOS_INDICADORES.includes(r.operador)),
+              listaVis.filter((r) => !OPERADORES_EXCLUIDOS_INDICADORES.includes(r.operador)),
               "operador"
             )}
           />
