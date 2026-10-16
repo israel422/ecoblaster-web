@@ -224,7 +224,9 @@ function GraficoBarrasEmpilhadasPorTipo({ linhas }: { linhas: ObraPorTipo[] }) {
   );
 }
 
-function TabelaAgregada({ titulo, colunaChave, linhas }: { titulo: string; colunaChave: string; linhas: LinhaAgregada[] }) {
+function TabelaAgregada({
+  titulo, colunaChave, linhas, diasPeriodo,
+}: { titulo: string; colunaChave: string; linhas: LinhaAgregada[]; diasPeriodo?: number }) {
   return (
     <div style={{ marginBottom: 28 }}>
       <h3 style={{ color: "#1B4FA2", fontSize: 17, marginBottom: 8 }}>{titulo}</h3>
@@ -238,7 +240,8 @@ function TabelaAgregada({ titulo, colunaChave, linhas }: { titulo: string; colun
               <th style={{ padding: 8 }}>Cavas</th>
               <th style={{ padding: 8 }}>Fotos</th>
               <th style={{ padding: 8 }}>Obras</th>
-              <th style={{ padding: 8 }}>Dias</th>
+              <th style={{ padding: 8 }}>{diasPeriodo ? "Dias trab." : "Dias"}</th>
+              {diasPeriodo ? <th style={{ padding: 8 }} title={`Dias do período (${diasPeriodo}) sem nenhum registro`}>Sem trabalho</th> : null}
               <th style={{ padding: 8 }} title="Cavas ÷ dias com registro">Média/dia</th>
             </tr>
           </thead>
@@ -251,6 +254,9 @@ function TabelaAgregada({ titulo, colunaChave, linhas }: { titulo: string; colun
                 <td style={{ padding: 8 }}>{l.fotos}</td>
                 <td style={{ padding: 8 }}>{l.obras}</td>
                 <td style={{ padding: 8 }}>{l.dias}</td>
+                {diasPeriodo ? (
+                  <td style={{ padding: 8, color: diasPeriodo - l.dias > 0 ? "#d93025" : undefined }}>{Math.max(0, diasPeriodo - l.dias)}</td>
+                ) : null}
                 <td style={{ padding: 8, fontWeight: 700 }}>{fmtMedia(l.mediaDia)}</td>
               </tr>
             ))}
@@ -1300,6 +1306,11 @@ export default function PainelIndicadores({ cpfAdmin, onVoltar }: { cpfAdmin: st
   const totalObras = new Set(listaVis.map((r) => r.obra)).size;
   const diasComRegistro = new Set(listaVis.map((r) => r.data)).size;
   const mediaPorDia = diasComRegistro ? totalCavas / diasComRegistro : 0;
+  const datasLista = (lista ?? []).map((r) => r.data).sort();
+  const periodoInicio = dataInicio || datasLista[0] || "";
+  const periodoFim = dataFim || datasLista[datasLista.length - 1] || "";
+  const diasPeriodo = periodoInicio && periodoFim && periodoInicio <= periodoFim ? diasNoIntervalo(periodoInicio, periodoFim).length : 0;
+  const diasSemTrabalho = Math.max(0, diasPeriodo - diasComRegistro);
 
   return (
     <div style={{ maxWidth: 1000, margin: "0 auto", padding: 24 }}>
@@ -1432,7 +1443,15 @@ export default function PainelIndicadores({ cpfAdmin, onVoltar }: { cpfAdmin: st
             </div>
             <div className="operador-card" style={{ flex: "1 1 140px" }} title="Cavas ÷ dias com registro">
               <div className="operador-nome">{fmtMedia(mediaPorDia)}</div>
-              <div className="operador-label">Média/dia ({diasComRegistro} dias)</div>
+              <div className="operador-label">Média/dia</div>
+            </div>
+            <div className="operador-card" style={{ flex: "1 1 140px" }} title="Dias com pelo menos um registro no período">
+              <div className="operador-nome">{diasComRegistro}{diasPeriodo ? <span style={{ fontSize: 14, fontWeight: 600 }}> de {diasPeriodo}</span> : null}</div>
+              <div className="operador-label">Dias trabalhados</div>
+            </div>
+            <div className="operador-card" style={{ flex: "1 1 140px" }} title="Dias do período sem nenhum registro (conta sábado e domingo, como na aba Frequência)">
+              <div className="operador-nome" style={{ color: diasSemTrabalho > 0 ? "#d93025" : undefined }}>{diasSemTrabalho}</div>
+              <div className="operador-label">Dias sem trabalho</div>
             </div>
           </div>
           {funcionario && (
@@ -1447,6 +1466,7 @@ export default function PainelIndicadores({ cpfAdmin, onVoltar }: { cpfAdmin: st
           <TabelaAgregada
             titulo="Por Operador"
             colunaChave="Operador"
+            diasPeriodo={diasPeriodo}
             linhas={agregarPor(
               listaVis.filter((r) => !OPERADORES_EXCLUIDOS_INDICADORES.includes(r.operador)),
               "operador"
