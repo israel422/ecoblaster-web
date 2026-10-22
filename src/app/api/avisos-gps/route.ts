@@ -31,13 +31,15 @@ export async function GET(req: Request) {
     const g = grupos.get(k) ?? { data: String(l.data), obra: l.obra, operador: l.operador, fotosPlanilha: 0, fotosSemNada: 0, fotos: 0, motivos: {}, ultimoEm: l.criadoEm.toISOString() };
     for (const f of (l.fotos as Foto[]) ?? []) {
       g.fotos++;
+      // fotos antigas (antes da correção de 22/10) já completadas com a melhor coordenada: não é mais problema
+      if (f.gpsErro === "app_antigo" && f.lat != null) continue;
       if (f.gpsFonte === "planilha") g.fotosPlanilha++;
       else if (f.lat == null) g.fotosSemNada++;
       else continue;
       const m = MOTIVO_GPS[f.gpsErro ?? ""] ?? "GPS não respondeu (app antigo)";
       g.motivos[m] = (g.motivos[m] ?? 0) + 1;
     }
-    grupos.set(k, g);
+    if (g.fotosPlanilha + g.fotosSemNada > 0) grupos.set(k, g);
   }
   return NextResponse.json([...grupos.values()].sort((a, b) => b.ultimoEm.localeCompare(a.ultimoEm)));
 }
