@@ -49,7 +49,7 @@ export async function registrarCava(
           fotoNum: f.fotoNum,
           label: f.label,
           url: f.uploadedUrl!,
-          ...(f.lat != null && f.lon != null ? { lat: f.lat, lon: f.lon } : {}),
+          ...(f.lat != null && f.lon != null ? { lat: f.lat, lon: f.lon } : f.gpsErro ? { gpsErro: f.gpsErro } : {}),
         })),
         turnoServerId: dados.turnoServerId,
       }),

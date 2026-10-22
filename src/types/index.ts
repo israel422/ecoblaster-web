@@ -24,6 +24,8 @@ export interface FotoItem {
    *  Base do mapa de incidência de rocha por localização. */
   lat?: number;
   lon?: number;
+  /** Quando a foto ficou sem coordenada: permissao_negada, gps_desligado, sem_sinal, sem_suporte. */
+  gpsErro?: string;
 }
 
 export interface DadosRegistro {

@@ -1,12 +1,14 @@
 "use client";
 
-import { useRef, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import type { FotoItem } from "@/types";
 import { stampPhoto, formatarDataHora } from "@/lib/camera/stampPhoto";
 import PhotoPreviewModal from "@/components/camera/PhotoPreviewModal";
 import ReferenciaFotoOverlay from "@/components/camera/ReferenciaFotoOverlay";
 import { REFERENCIAS_FOTO } from "@/lib/config/referenciasFoto";
 import ConfirmModal from "@/components/ui/ConfirmModal";
+import { iniciarGps, motivoSemGps, ouvirGps, posicaoParaFoto, reiniciarGps, statusGps } from "@/lib/camera/gps";
+import { gpsDoExif } from "@/lib/camera/exifGps";
 
 interface Props {
   obra: string;
@@ -33,9 +35,21 @@ export default function StepFotos({
   const inputGaleriaRef = useRef<HTMLInputElement>(null);
   const fotoIndexRef = useRef<number>(-1);
   const origemRef = useRef<"camera" | "galeria">("camera");
-  const gpsRef = useRef<{ lat: number; lon: number } | null>(null);
   // GPS da foto que está na pré-visualização (vai junto pro registro ao confirmar).
   const previewGpsRef = useRef<{ lat: number; lon: number } | null>(null);
+  const previewMotivoRef = useRef<string | undefined>(undefined);
+  const [gps, setGps] = useState(statusGps);
+  const [obtendoGps, setObtendoGps] = useState(false);
+  useEffect(() => {
+    iniciarGps();
+    setGps(statusGps());
+    const parar = ouvirGps(() => setGps(statusGps()));
+    const t = setInterval(() => setGps(statusGps()), 15_000); // a posição envelhece
+    return () => {
+      parar();
+      clearInterval(t);
+    };
+  }, []);
   const [previewBlob, setPreviewBlob] = useState<Blob | null>(null);
   const [idxParaApagar, setIdxParaApagar] = useState<number | null>(null);
   const [referenciaParaIdx, setReferenciaParaIdx] = useState<number | null>(null);
@@ -43,35 +57,19 @@ export default function StepFotos({
   const feitas = fotos.filter((f) => f.blob).length;
   const qtdCavas = new Set(fotos.map((f) => f.cava)).size;
 
-  function buscarGpsEmParalelo() {
-    gpsRef.current = null;
-    if (!navigator.geolocation) return;
-    navigator.geolocation.getCurrentPosition(
-      (pos) => {
-        gpsRef.current = { lat: pos.coords.latitude, lon: pos.coords.longitude };
-      },
-      () => {
-        gpsRef.current = null;
-      },
-      { enableHighAccuracy: true, maximumAge: 0, timeout: 8000 }
-    );
-  }
-
   // CRÍTICO: input.click() precisa rodar de forma síncrona dentro do toque do
-  // usuário. O GPS é buscado em paralelo, sem bloquear a abertura da câmera —
-  // senão o Safari no iOS ignora silenciosamente a chamada.
+  // usuário — senão o Safari no iOS ignora silenciosamente a chamada. O GPS já
+  // está sendo acompanhado desde que o registro abriu (lib/camera/gps.ts).
   function tirarFoto(idx: number) {
     fotoIndexRef.current = idx;
     origemRef.current = "camera";
     inputRef.current?.click();
-    buscarGpsEmParalelo();
   }
 
   function escolherDaGaleria(idx: number) {
     fotoIndexRef.current = idx;
     origemRef.current = "galeria";
     inputGaleriaRef.current?.click();
-    buscarGpsEmParalelo();
   }
 
   async function processarFoto(input: HTMLInputElement) {
@@ -82,8 +80,15 @@ export default function StepFotos({
     const item = fotos[idx];
     if (!item) return;
 
-    const gps = gpsRef.current;
+    // Foto da galeria: vale o GPS gravado pela câmera na própria foto (onde ela foi tirada).
+    // Foto na hora: GPS do celular (a última posição boa, ou espera até 10 s por uma).
+    setObtendoGps(true);
+    const exif = origemRef.current === "galeria" ? await gpsDoExif(file) : null;
+    const pos = exif ?? (await posicaoParaFoto(10_000)) ?? (await gpsDoExif(file));
+    setObtendoGps(false);
+    const gps = pos ? { lat: pos.lat, lon: pos.lon } : null;
     previewGpsRef.current = gps;
+    previewMotivoRef.current = gps ? undefined : motivoSemGps();
     const gpsStr = gps ? `GPS: ${gps.lat.toFixed(5)}, ${gps.lon.toFixed(5)}` : "GPS: indisponível";
 
     const blob = await stampPhoto(file, {
@@ -104,7 +109,7 @@ export default function StepFotos({
     const idx = fotoIndexRef.current;
     const gps = previewGpsRef.current;
     const novaLista = fotos.map((f, i) =>
-      i === idx ? { ...f, blob: previewBlob, lat: gps?.lat, lon: gps?.lon } : f
+      i === idx ? { ...f, blob: previewBlob, lat: gps?.lat, lon: gps?.lon, gpsErro: gps ? undefined : previewMotivoRef.current } : f
     );
     onFotosChange(novaLista);
     setPreviewBlob(null);
@@ -119,7 +124,7 @@ export default function StepFotos({
   function apagarFotoConfirmado() {
     const idx = idxParaApagar;
     if (idx === null) return;
-    const novaLista = fotos.map((f, i) => (i === idx ? { ...f, blob: undefined, lat: undefined, lon: undefined } : f));
+    const novaLista = fotos.map((f, i) => (i === idx ? { ...f, blob: undefined, lat: undefined, lon: undefined, gpsErro: undefined } : f));
     onFotosChange(novaLista);
     setIdxParaApagar(null);
   }
@@ -132,6 +137,7 @@ export default function StepFotos({
       <div className="passo-sub">
         {qtdCavas} cava(s) neste turno · {feitas}/{fotos.length} fotos tiradas
       </div>
+      <AvisoGps status={gps.status} precisao={gps.posicao?.precisao} obtendo={obtendoGps} />
 
       <input
         ref={inputRef}
@@ -292,5 +298,45 @@ function PhotoThumb({ blob }: { blob: Blob }) {
       alt="Miniatura"
       style={{ width: 64, height: 48, borderRadius: 10, objectFit: "cover", flexShrink: 0, border: "2px solid #34a853" }}
     />
+  );
+}
+
+// Faixa de localização na tela de fotos: diz se a coordenada vai sair na foto e como resolver
+function AvisoGps({ status, precisao, obtendo }: { status: string; precisao?: number; obtendo: boolean }) {
+  const base = { borderRadius: 10, padding: "10px 12px", margin: "8px 0 4px", fontSize: 13, lineHeight: 1.4 } as const;
+  if (obtendo) return <div style={{ ...base, background: "#eef4ff", color: "#1b4fa2" }}>📍 Obtendo localização para a foto…</div>;
+  if (status === "ok")
+    return (
+      <div style={{ ...base, background: "#e6f4ea", color: "#1e7b45" }}>
+        📍 Localização OK{precisao ? ` (±${Math.round(precisao)} m)` : ""}
+      </div>
+    );
+  if (status === "buscando")
+    return (
+      <div style={{ ...base, background: "#fff7e0", color: "#8a6000" }}>
+        📍 Buscando localização… Se puder, espere uns segundos com o céu aberto antes da foto.
+      </div>
+    );
+  const texto =
+    status === "negado"
+      ? "O Ecoblaster está SEM PERMISSÃO de localização. Toque no cadeado ao lado do endereço (ou ⋮ → Configurações do site) → Localização → Permitir. Depois toque em “Tentar de novo”."
+      : status === "desligado"
+        ? "O GPS do celular está DESLIGADO. Puxe a barra de cima e ligue a Localização. Depois toque em “Tentar de novo”."
+        : status === "sem_suporte"
+          ? "Este navegador não oferece localização. Abra o Ecoblaster no Chrome."
+          : "Sem sinal de GPS agora. Vá para um lugar com céu aberto e toque em “Tentar de novo”.";
+  return (
+    <div style={{ ...base, background: "#fdecea", color: "#a32020", border: "1px solid #f5c2c0" }}>
+      ⚠️ <b>A foto vai sair SEM coordenada.</b> {texto}
+      <div>
+        <button
+          type="button"
+          onClick={reiniciarGps}
+          style={{ marginTop: 8, padding: "6px 12px", borderRadius: 8, border: "1px solid #a32020", background: "#fff", color: "#a32020", fontWeight: 700 }}
+        >
+          Tentar de novo
+        </button>
+      </div>
+    </div>
   );
 }

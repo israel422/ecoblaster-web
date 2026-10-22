@@ -14,6 +14,7 @@ import StepData from "./StepData";
 import StepOperador from "./StepOperador";
 import StepTipoCava from "./StepTipoCava";
 import StepFotos from "./StepFotos";
+import { iniciarGps } from "@/lib/camera/gps";
 import StepDecisaoCava from "./StepDecisaoCava";
 import StepObservacao from "./StepObservacao";
 
@@ -38,6 +39,10 @@ interface Props {
 
 export default function WizardShell({ sessao, turnoInicial, passoInicial, onAbrirPainel, onVoltarInicio }: Props) {
   const [passo, setPasso] = useState(passoInicial ?? 1);
+  // Liga o GPS logo no começo do registro: quando chegar nas fotos, a posição já está pronta
+  useEffect(() => {
+    iniciarGps();
+  }, []);
   const [dados, setDados] = useState<DadosRegistro>(
     turnoInicial
       ? {

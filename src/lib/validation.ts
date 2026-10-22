@@ -7,6 +7,7 @@ export const fotoItemSchema = z.object({
   url: z.string().url(),
   lat: z.number().min(-90).max(90).optional(),
   lon: z.number().min(-180).max(180).optional(),
+  gpsErro: z.string().max(40).optional(),
 });
 
 export const registroSchema = z.object({
