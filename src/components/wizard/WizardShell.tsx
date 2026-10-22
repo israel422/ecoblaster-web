@@ -54,25 +54,32 @@ export default function WizardShell({ sessao, turnoInicial, passoInicial, onAbri
       : { obra: "", data: hojeISO(), tipoCava: "", observacao: "" }
   );
   const [fotos, setFotos] = useState<FotoItem[]>(turnoInicial?.fotos ?? []);
-  // Plano B do GPS: coordenada da obra no Cronograma de Obras (guardada no aparelho para o campo sem internet)
+  // Plano B do GPS: coordenada da obra no Cronograma de Obras. O celular guarda a lista inteira
+  // (cópia diária do cronograma, atualizada às 5h no servidor) para funcionar sem internet no campo.
   const [coordObra, setCoordObra] = useState<{ lat: number; lon: number } | null>(null);
   useEffect(() => {
-    const obra = dados.obra;
+    const obra = dados.obra.replace(/\D/g, "").replace(/^0+/, "");
     if (!obra) return;
-    const chave = `ecoblaster.coordObra.${obra}`;
+    const CHAVE = "ecoblaster.coordObras";
+    const usar = (lista: Record<string, [number, number]> | undefined) => {
+      const c = lista?.[obra];
+      if (c) setCoordObra({ lat: c[0], lon: c[1] });
+    };
+    let guardada: { baixadaEm: number; obras: Record<string, [number, number]> } | null = null;
     try {
-      const salva = localStorage.getItem(chave);
-      if (salva) setCoordObra(JSON.parse(salva));
+      guardada = JSON.parse(localStorage.getItem(CHAVE) || "null");
     } catch {}
-    fetch(`/api/obras/coordenada?obra=${encodeURIComponent(obra)}&cpf=${sessao.cpf}`)
+    usar(guardada?.obras);
+    const velha = !guardada || Date.now() - guardada.baixadaEm > 12 * 3600_000 || !guardada.obras[obra];
+    if (!velha) return;
+    fetch(`/api/obras/coordenadas?cpf=${sessao.cpf}`)
       .then((r) => (r.ok ? r.json() : null))
-      .then((c) => {
-        if (c?.lat != null) {
-          setCoordObra(c);
-          try {
-            localStorage.setItem(chave, JSON.stringify(c));
-          } catch {}
-        }
+      .then((d) => {
+        if (!d?.obras) return;
+        usar(d.obras);
+        try {
+          localStorage.setItem(CHAVE, JSON.stringify({ baixadaEm: Date.now(), obras: d.obras }));
+        } catch {}
       })
       .catch(() => {});
   }, [dados.obra, sessao.cpf]);

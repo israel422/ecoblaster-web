@@ -84,8 +84,8 @@ export async function POST(req: Request) {
       const motivo = MOTIVO_GPS[(usouPlanilha[0] ?? semNada[0])?.gpsErro ?? ""] ?? "GPS não respondeu";
       await enviarPushParaTodos(
         semNada.length
-          ? { titulo: "⚠️ Foto sem coordenada", corpo: `${operador.nome} · obra ${parsed.data.obra}: ${motivo}, e a obra não tem coordenada no Cronograma de Obras.`, url: "/painel" }
-          : { titulo: "📍 Coordenada da planilha", corpo: `${operador.nome} · obra ${parsed.data.obra}: ${motivo}. Usei a coordenada da obra no Cronograma de Obras.`, url: "/painel" }
+          ? { titulo: "⚠️ Foto sem coordenada", corpo: `${operador.nome} · obra ${parsed.data.obra}: ${motivo}, e a obra não tem coordenada no Cronograma de Obras.`, url: "/?tela=avisos-gps" }
+          : { titulo: "📍 Coordenada da planilha", corpo: `${operador.nome} · obra ${parsed.data.obra}: ${motivo}. Usei a coordenada da obra no Cronograma de Obras.`, url: "/?tela=avisos-gps" }
       ).catch((err) => console.error("Falha no aviso de GPS:", err));
     }
 

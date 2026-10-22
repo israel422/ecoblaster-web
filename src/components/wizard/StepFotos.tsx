@@ -103,11 +103,9 @@ export default function StepFotos({
     previewGpsRef.current = gps;
     previewFonteRef.current = fonte;
     previewMotivoRef.current = fonte === "planilha" || !gps ? motivo : undefined;
-    const gpsStr = !gps
-      ? "GPS: indisponível"
-      : fonte === "planilha"
-        ? `GPS (planilha da obra): ${gps.lat.toFixed(5)}, ${gps.lon.toFixed(5)}`
-        : `GPS: ${gps.lat.toFixed(5)}, ${gps.lon.toFixed(5)}`;
+    // O carimbo não diz de onde veio a coordenada; a origem fica registrada (gpsFonte) e o
+    // problema aparece para os administradores em "Avisos de GPS".
+    const gpsStr = gps ? `GPS: ${gps.lat.toFixed(5)}, ${gps.lon.toFixed(5)}` : "GPS: indisponível";
 
     const blob = await stampPhoto(file, {
       dataHoraStr: formatarDataHora(new Date()),
