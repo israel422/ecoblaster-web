@@ -32,7 +32,7 @@ export const chaveObra = (codigo: string) => codigo.replace(/\D/g, "").replace(/
 // ativas: uma linha por obra (a que tem coordenada), sem as obras prontas — é o que vai para o banco.
 // todas: inclui as prontas — só para consulta pontual, se uma obra recém-encerrada ainda tiver foto.
 async function lerPlanilha(): Promise<{ ativas: Map<string, [number, number]>; todas: Map<string, [number, number]> }> {
-  const r = await fetch(URL_CSV, { cache: "no-store" });
+  const r = await fetch(URL_CSV, { cache: "no-store", signal: AbortSignal.timeout(25_000) });
   if (!r.ok) throw new Error(`Google respondeu ${r.status}`);
   const texto = await r.text();
   if (texto.trimStart().startsWith("<")) throw new Error("cronograma sem acesso por link");
@@ -80,7 +80,10 @@ async function copiaEmDia() {
   await garantirTabela();
   const [r] = await sql`SELECT count(*)::int AS n, max(atualizado_em) AS em FROM obras_coordenadas`;
   const velha = !r?.n || Date.now() - new Date(r.em).getTime() > VELHA_HORAS * 3600_000;
-  if (velha) await atualizarCoordenadas().catch((err) => console.error("Falha ao atualizar coordenadas do cronograma:", err));
+  if (!velha) return;
+  const atualizar = atualizarCoordenadas().catch((err) => console.error("Falha ao atualizar coordenadas do cronograma:", err));
+  // com cópia (mesmo velha) responde na hora e atualiza por trás; sem nenhuma cópia, espera
+  if (!r?.n) await atualizar;
 }
 
 export async function coordenadaDaObra(codigo: string): Promise<{ lat: number; lon: number } | null> {
