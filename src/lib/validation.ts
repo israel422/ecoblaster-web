@@ -9,6 +9,7 @@ export const fotoItemSchema = z.object({
   lon: z.number().min(-180).max(180).optional(),
   gpsErro: z.string().max(40).optional(),
   gpsFonte: z.enum(["exif", "planilha"]).optional(),
+  ponto: z.string().regex(/^P\d{1,3}$/).optional(),
 });
 
 export const registroSchema = z.object({

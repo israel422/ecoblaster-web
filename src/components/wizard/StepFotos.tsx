@@ -115,6 +115,7 @@ export default function StepFotos({
       label: item.label,
       operador,
       gpsStr,
+      ponto: item.ponto,
     });
 
     setPreviewBlob(blob);
@@ -143,6 +144,16 @@ export default function StepFotos({
     const novaLista = fotos.map((f, i) => (i === idx ? { ...f, blob: undefined, lat: undefined, lon: undefined, gpsErro: undefined, gpsFonte: undefined } : f));
     onFotosChange(novaLista);
     setIdxParaApagar(null);
+  }
+
+  // Ponto escolhido para uma foto; as fotos seguintes da mesma cava herdam o mesmo ponto
+  function escolherPonto(idx: number, ponto: string) {
+    const cava = fotos[idx].cava;
+    onFotosChange(
+      fotos.map((f, i) =>
+        i === idx || (i > idx && f.cava === cava && !f.blob && !f.ponto) ? { ...f, ponto: ponto || undefined } : f
+      )
+    );
   }
 
   let cavaAtual = 0;
@@ -227,8 +238,22 @@ export default function StepFotos({
                     Foto {item.fotoNum}: {item.label}
                   </div>
                   <div style={{ fontSize: 12, color: "#888", marginTop: 3 }}>
-                    {item.blob ? "Foto tirada" : "Toque para fotografar"}
+                    {item.blob ? `Foto tirada${item.ponto ? ` · Ponto ${item.ponto}` : ""}` : "Escolha o ponto e toque para fotografar"}
                   </div>
+                  {!item.blob && (
+                    <select
+                      className="ponto-select"
+                      value={item.ponto ?? ""}
+                      onClick={(e) => e.stopPropagation()}
+                      onChange={(e) => escolherPonto(idx, e.target.value)}
+                      aria-label="Ponto do projeto"
+                    >
+                      <option value="">Ponto…</option>
+                      {PONTOS.map((p) => (
+                        <option key={p} value={p}>{p}</option>
+                      ))}
+                    </select>
+                  )}
                 </div>
                 {!item.blob && (
                   <button
@@ -304,6 +329,8 @@ export default function StepFotos({
     </>
   );
 }
+
+const PONTOS = Array.from({ length: 200 }, (_, i) => `P${i + 1}`);
 
 function PhotoThumb({ blob }: { blob: Blob }) {
   const [url] = useState(() => URL.createObjectURL(blob));

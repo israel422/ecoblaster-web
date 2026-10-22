@@ -776,3 +776,8 @@ body { background: #f2f5f4; color: #173a3a; font-family: "Segoe UI", "Inter", sy
 /* tabelas dos painéis */
 table { border-collapse: separate; border-spacing: 0; }
 table th { background: #e9f4ee; color: #0f3b3c; }
+
+/* ponto do projeto (P1–P200) em cada foto */
+.ponto-select { margin-top: 8px; padding: 7px 10px; min-width: 120px; border: 1.5px solid #3aa751; border-radius: 10px;
+  background: #fff; color: #1f6e43; font-weight: 700; font-size: 14px; }
+.ponto-select:focus { outline: none; box-shadow: 0 0 0 3px rgba(58, 167, 81, 0.18); }

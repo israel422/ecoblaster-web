@@ -6,6 +6,7 @@ export interface DadosCarimbo {
   label: string;
   operador: string;
   gpsStr: string;
+  ponto?: string;
 }
 
 // Redimensiona pra no máximo 1280px, desenha a faixa de carimbo (data/hora, obra,
@@ -52,7 +53,7 @@ export function stampPhoto(file: File, dados: DadosCarimbo): Promise<Blob> {
 
         ctx.font = `bold ${fs}px sans-serif`;
         ctx.fillStyle = "#FFD700";
-        ctx.fillText(`Obra: ${dados.obra} | ${dados.tipoCava} | Cava ${dados.cava}`, 12, y + lh);
+        ctx.fillText(`Obra: ${dados.obra} | ${dados.tipoCava} | Cava ${dados.cava}${dados.ponto ? ` | Ponto ${dados.ponto}` : ""}`, 12, y + lh);
 
         ctx.fillStyle = "#FFFFFF";
         ctx.fillText(dados.label, 12, y + lh * 2);
