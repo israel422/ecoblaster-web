@@ -502,121 +502,140 @@ textarea.campo-grande {
 }
 
 /* ── Login (tela inicial do EcoBlaster) ──────────────────────── */
+/* A arte (public/login-fundo.jpg, 1835×857) é o fundo inteiro. O cartão é o recorte do cartão
+   desenhado na própria arte (public/login-cartao.png) e por cima dele ficam o campo de CPF e o
+   botão de verdade, nas mesmas posições do desenho. */
 .login-tela {
   position: fixed;
   inset: 0;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  padding: 24px;
   overflow: hidden;
-  background: #ffffff;
+  background: #0b3a7a;
 }
 
-.login-hero {
+/* palco com a proporção da arte, cobrindo a tela (como background-size: cover) */
+.login-palco {
+  --larg: max(100vw, calc(100vh * 1835 / 857));
   position: absolute;
-  inset: 0;
-  z-index: 0;
-}
-
-.login-hero-img {
-  width: 100%;
-  height: 100%;
-  object-fit: contain;
-  opacity: 0.22;
-  pointer-events: none;
-}
-
-.login-card-wrap {
-  position: relative;
-  z-index: 1;
-  width: 100%;
-  display: flex;
-  justify-content: center;
-}
-
-.login-card {
-  width: 100%;
-  max-width: 380px;
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  text-align: center;
-  background: #fff;
-  border-radius: 20px;
-  padding: 32px 26px;
-  box-shadow: 0 12px 40px rgba(20, 40, 80, 0.14);
-}
-
-.login-logo {
-  width: 190px;
-  margin-bottom: 4px;
-}
-
-.login-app-nome {
-  font-size: 22px;
-  font-weight: 800;
-  color: #1b4fa2;
-  letter-spacing: 1.5px;
-  margin-bottom: 18px;
-}
-
-.login-boas-vindas {
-  font-size: 22px;
-  font-weight: 800;
-  color: #1b4fa2;
-  margin-bottom: 4px;
-}
-
-.login-instrucao {
-  font-size: 14px;
-  color: #666;
-  margin-bottom: 22px;
-}
-
-.login-input-wrap {
-  position: relative;
-}
-
-.login-input {
-  padding-right: 46px;
-}
-
-.login-input-icon {
-  position: absolute;
-  right: 16px;
+  width: var(--larg);
+  height: calc(var(--larg) * 857 / 1835);
+  left: 50%;
   top: 50%;
-  transform: translateY(-50%);
-  font-size: 18px;
-  opacity: 0.45;
-  pointer-events: none;
+  transform: translate(-50%, -50%);
+  background: url("/login-fundo.jpg") center / 100% 100% no-repeat;
 }
 
-.login-btn {
-  width: 100%;
+/* cartão exatamente sobre o cartão desenhado (x 760–1281, y 126–745 da arte) */
+.login-cartao {
+  position: absolute;
+  left: 41.417%;
+  top: 14.702%;
+  width: 28.392%;
+  height: 72.229%;
+  background: url("/login-cartao.png") center / 100% 100% no-repeat;
+  font-size: calc(var(--larg) * 0.0098);
+}
+
+/* celular em pé: mostra o lado das turbinas e o cartão no meio da tela */
+@media (max-aspect-ratio: 1/1) {
+  .login-palco {
+    left: calc(50vw - var(--larg) * 0.86);
+    transform: translateY(-50%);
+  }
+  .login-cartao {
+    position: fixed;
+    left: 50%;
+    top: 50%;
+    width: min(92vw, calc(88vh * 521 / 619), 430px);
+    height: auto;
+    aspect-ratio: 521 / 619;
+    transform: translate(-50%, -50%);
+    font-size: calc(min(92vw, calc(88vh * 521 / 619), 430px) * 0.0345);
+    filter: drop-shadow(0 18px 40px rgba(4, 25, 60, 0.35));
+  }
+}
+
+/* campo de CPF (x 793–1247, y 488–540 da arte) */
+.login-cpf {
+  position: absolute;
+  left: 6.33%;
+  top: 58.48%;
+  width: 87.14%;
+  height: 8.4%;
+  display: flex;
+  align-items: center;
+  gap: 0.7em;
+  padding: 0 1.1em;
+  background: #fff;
+  border: 1px solid #dfe5ee;
+  border-radius: 0.75em;
+  box-shadow: inset 0 1px 2px rgba(20, 40, 80, 0.04);
+}
+.login-cpf:focus-within {
+  border-color: #1a5fd0;
+  box-shadow: 0 0 0 3px rgba(26, 95, 208, 0.15);
+}
+.login-cpf svg {
+  width: 1.35em;
+  height: 1.35em;
+  flex: none;
+  fill: #5f6b7a;
+}
+.login-cpf input {
+  flex: 1;
+  min-width: 0;
+  border: 0;
+  outline: 0;
+  background: transparent;
+  font-size: 1.45em;
+  color: #1d2733;
+  letter-spacing: 0.02em;
+}
+.login-cpf input::placeholder {
+  color: #7c8796;
+}
+
+/* botão Entrar (x 795–1246, y 575–643 da arte) */
+.login-entrar {
+  position: absolute;
+  left: 6.72%;
+  top: 72.54%;
+  width: 86.56%;
+  height: 11.13%;
   display: flex;
   align-items: center;
   justify-content: center;
-  gap: 10px;
-  background: linear-gradient(135deg, #1557b0, #1a73e8);
+  gap: 0.55em;
+  border: 0;
+  border-radius: 0.9em;
+  background: linear-gradient(90deg, #0b3a8c 0%, #1050c4 100%);
   color: #fff;
-  border: none;
-  border-radius: 14px;
-  padding: 20px;
-  font-size: 18px;
+  font-size: 1.55em;
   font-weight: 700;
   cursor: pointer;
-  box-shadow: 0 4px 20px rgba(21, 87, 176, 0.35);
-  margin-top: 14px;
+  box-shadow: 0 6px 18px rgba(16, 64, 160, 0.35);
+}
+.login-entrar:active {
+  transform: translateY(1px);
+}
+.login-entrar svg {
+  width: 1.05em;
+  height: 1.05em;
+  stroke: currentColor;
+  stroke-width: 2.6;
+  fill: none;
 }
 
-.login-seguro {
-  font-size: 13px;
-  color: #888;
-  margin-top: 20px;
-  padding-top: 16px;
-  border-top: 1px solid #eee;
-  width: 100%;
+/* aviso de CPF não autorizado, entre o botão e a linha do "Acesso seguro" */
+.login-erro {
+  position: absolute;
+  left: 6.7%;
+  width: 86.6%;
+  top: 84%;
+  text-align: center;
+  color: #c62828;
+  font-weight: 700;
+  font-size: 1.15em;
+  background: #fff;
 }
 
 /* ── Sucesso ──────────────────────────────────────────────── */

@@ -41,47 +41,40 @@ export default function LoginScreen({ onLogin }: { onLogin: (sessao: SessaoOpera
 
   return (
     <div className="login-tela">
-      <div className="login-hero">
-        {/* eslint-disable-next-line @next/next/no-img-element */}
-        <img src="/login-hero.jpg" alt="" aria-hidden="true" className="login-hero-img" />
-      </div>
-
-      <div className="login-card-wrap">
-        <div className="login-card">
-          {/* eslint-disable-next-line @next/next/no-img-element */}
-          <img src="/icons/logo-watermark.png" alt="Ecoelétrica Engenharia" className="login-logo" />
-          <div className="login-app-nome">EcoBlaster</div>
-          <div className="login-boas-vindas">Bem-vindo!</div>
-          <div className="login-instrucao">Digite seu CPF para acessar o sistema.</div>
-
-          <div style={{ width: "100%", textAlign: "left" }}>
-            <label className="splash-label">CPF</label>
-            <div className="login-input-wrap">
-              <input
-                className="splash-input login-input"
-                type="tel"
-                inputMode="numeric"
-                maxLength={14}
-                placeholder="000.000.000-00"
-                value={cpfMascarado}
-                onChange={(e) => setCpfMascarado(mascararCPF(e.target.value))}
-                onKeyDown={(e) => {
-                  if (e.key === "Enter") tentarLogin();
-                }}
-              />
-              <span className="login-input-icon">👤</span>
-            </div>
-          </div>
-
-          {erro && <div className="splash-erro">CPF não autorizado.</div>}
-
-          <button className="login-btn" onClick={tentarLogin}>
-            Entrar <span>→</span>
-          </button>
-
-          <div className="login-seguro">🛡️ Acesso seguro e protegido</div>
-        </div>
-      </div>
+      <div className="login-palco" aria-hidden="true" />
+      {/* cartão = recorte do cartão da arte; campo e botão reais por cima dos desenhados */}
+      <form
+        className="login-cartao"
+        aria-label="EcoBlaster — entrar com CPF"
+        onSubmit={(e) => {
+          e.preventDefault();
+          tentarLogin();
+        }}
+      >
+        <label className="login-cpf">
+          <svg viewBox="0 0 24 24" aria-hidden="true">
+            <circle cx="12" cy="8" r="4.2" />
+            <path d="M3.5 21c.8-4.4 4.2-6.8 8.5-6.8s7.7 2.4 8.5 6.8z" />
+          </svg>
+          <input
+            type="tel"
+            inputMode="numeric"
+            autoComplete="off"
+            maxLength={14}
+            placeholder="000.000.000-00"
+            aria-label="CPF"
+            value={cpfMascarado}
+            onChange={(e) => setCpfMascarado(mascararCPF(e.target.value))}
+          />
+        </label>
+        <button type="submit" className="login-entrar">
+          Entrar
+          <svg viewBox="0 0 24 24" aria-hidden="true">
+            <path d="M4 12h15M13 6l6 6-6 6" strokeLinecap="round" strokeLinejoin="round" />
+          </svg>
+        </button>
+        {erro && <div className="login-erro">CPF não autorizado.</div>}
+      </form>
     </div>
   );
 }
