@@ -680,3 +680,52 @@ textarea.campo-grande {
   font-weight: 700;
   cursor: pointer;
 }
+
+/* ── Menu do administrador (mesmo visual do Mapa de Rocha) ─────────── */
+.eco-pagina { min-height: 100vh; width: 100%; background: #f2f5f4; color: #173a3a; }
+.eco-topo { position: sticky; top: 0; z-index: 5; height: 76px; display: flex; align-items: center; gap: 20px;
+  padding: 0 26px 0 22px; background: #fff; border-bottom: 1px solid #e1e8e5; box-shadow: 0 1px 3px rgba(15, 59, 60, 0.06); }
+.eco-topo-logo { height: 54px; width: auto; }
+.eco-topo-faixa { flex: 1; align-self: stretch; margin-bottom: 4px; overflow: hidden; border-radius: 0 0 4px 4px;
+  clip-path: polygon(9% 0, 100% 0, 92% 100%, 0 100%); }
+.eco-topo-faixa svg { width: 100%; height: 100%; display: block; }
+.eco-topo-usuario { display: flex; align-items: center; gap: 10px; font-size: 13px; }
+.eco-topo-usuario b { display: block; color: #173a3a; text-transform: capitalize; }
+.eco-topo-usuario small { color: #5d6f6c; }
+.eco-avatar { width: 38px; height: 38px; border-radius: 50%; background: #2f9e4b; color: #fff; display: grid;
+  place-items: center; font-weight: 700; font-size: 13px; flex: none; }
+.eco-conteudo { max-width: 1100px; margin: 0 auto; padding: 28px 22px 48px; }
+.eco-titulo { display: flex; justify-content: space-between; align-items: flex-end; gap: 14px; flex-wrap: wrap; margin-bottom: 18px; }
+.eco-titulo h1 { margin: 0; font-size: 28px; font-weight: 800; color: #0f3b3c; letter-spacing: -0.01em; }
+.eco-titulo p { margin: 2px 0 0; color: #5d6f6c; font-size: 15px; }
+.eco-sino { display: inline-flex; align-items: center; gap: 8px; padding: 9px 16px; border-radius: 999px; border: 1.5px solid #3aa751;
+  background: #fff; color: #1f6e43; font-weight: 700; font-size: 14px; cursor: pointer; }
+.eco-sino.on { border-color: #cfe3d6; background: #e9f4ee; color: #2f7d4f; cursor: default; }
+.eco-sino svg { width: 18px; height: 18px; fill: none; stroke: currentColor; stroke-width: 2; stroke-linecap: round; stroke-linejoin: round; }
+.eco-aviso { background: #fff; border: 1px solid #e1e8e5; border-radius: 12px; padding: 10px 14px; margin-bottom: 14px; font-size: 14px; }
+.eco-destaque { width: 100%; display: flex; align-items: center; gap: 18px; text-align: left; padding: 20px 24px; margin-bottom: 18px;
+  border: 0; border-radius: 18px; cursor: pointer; color: #fff; background: linear-gradient(100deg, #2f9e4b 0%, #1f7a4a 55%, #0f4a3c 100%);
+  box-shadow: 0 10px 26px rgba(31, 122, 74, 0.28); }
+.eco-destaque b { display: block; font-size: 22px; }
+.eco-destaque small { display: block; font-size: 14px; opacity: 0.9; margin-top: 2px; }
+.eco-destaque .eco-seta { margin-left: auto; width: 28px; height: 28px; fill: none; stroke: #fff; stroke-width: 2.4; stroke-linecap: round; stroke-linejoin: round; }
+.eco-grade { display: grid; grid-template-columns: repeat(auto-fit, minmax(300px, 1fr)); gap: 16px; }
+.eco-cartao { display: flex; align-items: center; gap: 16px; text-align: left; padding: 20px 22px; border-radius: 16px; cursor: pointer;
+  background: #fff; border: 1px solid #e1e8e5; box-shadow: 0 4px 18px rgba(15, 59, 60, 0.06); transition: transform .12s, box-shadow .12s, border-color .12s; }
+.eco-cartao:hover { transform: translateY(-2px); border-color: #b9dcc4; box-shadow: 0 10px 24px rgba(15, 59, 60, 0.10); }
+.eco-cartao b { display: block; font-size: 17px; color: #0f3b3c; }
+.eco-cartao small { display: block; font-size: 13.5px; color: #5d6f6c; margin-top: 3px; }
+.eco-ico { width: 52px; height: 52px; flex: none; border-radius: 14px; display: grid; place-items: center; background: #e9f4ee; }
+.eco-ico svg { width: 28px; height: 28px; fill: none; stroke: #1f8a4c; stroke-width: 1.9; stroke-linecap: round; stroke-linejoin: round; }
+.eco-ico.grande { width: 58px; height: 58px; background: rgba(255, 255, 255, 0.18); }
+.eco-ico.grande svg { stroke: #fff; stroke-width: 2.6; }
+@media (max-width: 720px) {
+  .eco-topo { height: 64px; padding: 0 14px; }
+  .eco-topo-logo { height: 44px; }
+  .eco-topo-faixa, .eco-topo-usuario div { display: none; }
+  .eco-topo-usuario { margin-left: auto; }
+  .eco-conteudo { padding: 20px 14px 40px; }
+  .eco-titulo h1 { font-size: 24px; }
+  .eco-grade { grid-template-columns: 1fr; gap: 12px; }
+  .eco-cartao { padding: 16px; }
+}
