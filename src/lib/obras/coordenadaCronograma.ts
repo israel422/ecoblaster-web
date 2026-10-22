@@ -136,4 +136,15 @@ export const MOTIVO_GPS: Record<string, string> = {
   gps_desligado: "GPS do celular desligado",
   sem_sinal: "sem sinal de GPS",
   sem_suporte: "navegador sem localização",
+  foto_da_galeria: "foto escolhida da galeria (não foi tirada na hora)",
+};
+
+// De onde veio a coordenada quando não foi o GPS normal do celular
+export const ORIGEM_GPS: Record<string, string> = {
+  planilha: "coordenada da obra no Cronograma de Obras",
+  exif: "GPS gravado na foto (galeria/câmera)",
+  cava: "GPS de outra foto da mesma cava",
+  turno: "média do GPS do turno",
+  proximo: "último GPS do operador no dia (obra fora do cronograma)",
+  carimbo: "GPS lido do carimbo da foto",
 };

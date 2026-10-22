@@ -3,7 +3,7 @@ import { and, desc, gte, sql } from "drizzle-orm";
 import { db } from "@/lib/db/client";
 import { registros } from "@/lib/db/schema";
 import { isAdmin } from "@/lib/config/operadores";
-import { MOTIVO_GPS } from "@/lib/obras/coordenadaCronograma";
+import { MOTIVO_GPS, ORIGEM_GPS } from "@/lib/obras/coordenadaCronograma";
 
 type Foto = { label?: string; gpsFonte?: string; gpsErro?: string; lat?: number };
 
@@ -20,22 +20,25 @@ export async function GET(req: Request) {
     .select({ id: registros.id, data: registros.data, obra: registros.obra, operador: registros.operador,
       turnoId: registros.turnoId, criadoEm: registros.criadoEm, fotos: registros.fotos })
     .from(registros)
-    .where(and(gte(registros.data, desde), sql`(${registros.fotos} @> '[{"gpsFonte":"planilha"}]'::jsonb
+    .where(and(gte(registros.data, desde), sql`(jsonb_path_exists(${registros.fotos}, '$[*] ? (exists(@.gpsFonte))')
       OR jsonb_path_exists(${registros.fotos}, '$[*] ? (!exists(@.lat))'))`))
     .orderBy(desc(registros.criadoEm));
 
   const grupos = new Map<string, { data: string; obra: string; operador: string; fotosPlanilha: number; fotosSemNada: number; fotos: number;
-    motivos: Record<string, number>; ultimoEm: string }>();
+    motivos: Record<string, number>; origens: Record<string, number>; ultimoEm: string }>();
   for (const l of linhas) {
     const k = `${l.turnoId ?? l.id}|${l.obra}`;
-    const g = grupos.get(k) ?? { data: String(l.data), obra: l.obra, operador: l.operador, fotosPlanilha: 0, fotosSemNada: 0, fotos: 0, motivos: {}, ultimoEm: l.criadoEm.toISOString() };
+    const g = grupos.get(k) ?? { data: String(l.data), obra: l.obra, operador: l.operador, fotosPlanilha: 0, fotosSemNada: 0, fotos: 0, motivos: {}, origens: {}, ultimoEm: l.criadoEm.toISOString() };
     for (const f of (l.fotos as Foto[]) ?? []) {
       g.fotos++;
       // fotos antigas (antes da correção de 22/10) já completadas com a melhor coordenada: não é mais problema
       if (f.gpsErro === "app_antigo" && f.lat != null) continue;
-      if (f.gpsFonte === "planilha") g.fotosPlanilha++;
-      else if (f.lat == null) g.fotosSemNada++;
-      else continue;
+      if (f.lat == null) g.fotosSemNada++;
+      else if (f.gpsFonte) {
+        g.fotosPlanilha++;
+        const o = ORIGEM_GPS[f.gpsFonte] ?? f.gpsFonte;
+        g.origens[o] = (g.origens[o] ?? 0) + 1;
+      } else continue;
       const m = MOTIVO_GPS[f.gpsErro ?? ""] ?? "GPS não respondeu (app antigo)";
       g.motivos[m] = (g.motivos[m] ?? 0) + 1;
     }

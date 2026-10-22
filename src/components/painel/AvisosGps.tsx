@@ -10,6 +10,7 @@ interface Aviso {
   fotosPlanilha: number;
   fotosSemNada: number;
   motivos: Record<string, number>;
+  origens?: Record<string, number>;
 }
 
 interface Props {
@@ -52,8 +53,8 @@ export default function AvisosGps({ cpfAdmin, onVoltar }: Props) {
         )}
       </div>
       <div style={{ color: "#5d6f6c", fontSize: 13, marginBottom: 14 }}>
-        Turnos em que o celular não conseguiu o GPS e a foto recebeu a coordenada da obra no Cronograma de Obras.
-        Resolva o problema no celular do operador para a coordenada voltar a ser a exata da cava.
+        Fotos que NÃO pegaram o GPS normal do celular. Todas receberam coordenada (Cronograma de Obras, GPS gravado na
+        foto ou último GPS do operador) — aqui aparece de onde veio e o problema no celular do operador, para corrigir em campo.
       </div>
 
       <div style={{ display: "flex", gap: 8, marginBottom: 16, alignItems: "center", flexWrap: "wrap" }}>
@@ -100,7 +101,7 @@ export default function AvisosGps({ cpfAdmin, onVoltar }: Props) {
               ? Object.keys(a.motivos).some((m) => m.includes("app antigo"))
                 ? `⚠️ ${a.fotosSemNada} foto(s) sem coordenada: tiradas antes da correção do GPS (22/10).`
                 : `⚠️ ${a.fotosSemNada} foto(s) ficaram sem coordenada: a obra não tem coordenada no Cronograma de Obras.`
-              : "📍 Coordenada da obra no Cronograma de Obras usada nas fotos."}
+              : `📍 Coordenada usada: ${Object.entries(a.origens ?? {}).map(([o, n]) => `${o} (${n})`).join(" · ") || "Cronograma de Obras"}`}
           </div>
         </div>
       ))}

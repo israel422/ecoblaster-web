@@ -93,7 +93,7 @@ export default function StepFotos({
     if (pos) fonte = "exif";
     if (!pos) pos = await posicaoParaFoto(10_000);
     if (!pos && (pos = await gpsDoExif(file))) fonte = "exif";
-    const motivo = pos && fonte !== "exif" ? undefined : motivoSemGps();
+    const motivo = pos && fonte !== "exif" ? undefined : origemRef.current === "galeria" && fonte === "exif" ? "foto_da_galeria" : motivoSemGps();
     if (!pos && coordObra) {
       pos = coordObra;
       fonte = "planilha";
