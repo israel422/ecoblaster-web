@@ -148,3 +148,12 @@ export const ORIGEM_GPS: Record<string, string> = {
   proximo: "último GPS do operador no dia (obra fora do cronograma)",
   carimbo: "GPS lido do carimbo da foto",
 };
+
+// GPS do celular mais longe que isso da coordenada da obra no Cronograma = foto acusada como "longe da obra"
+export const LIMITE_LONGE_KM = 3;
+
+export function distanciaKm(a: { lat: number; lon: number }, b: { lat: number; lon: number }): number {
+  const r = Math.PI / 180;
+  const h = Math.sin(((b.lat - a.lat) * r) / 2) ** 2 + Math.cos(a.lat * r) * Math.cos(b.lat * r) * Math.sin(((b.lon - a.lon) * r) / 2) ** 2;
+  return 2 * 6371 * Math.asin(Math.sqrt(h));
+}

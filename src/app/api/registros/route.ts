@@ -4,7 +4,7 @@ import { db } from "@/lib/db/client";
 import { registros } from "@/lib/db/schema";
 import { buscarOperador, isAdmin } from "@/lib/config/operadores";
 import { registroSchema } from "@/lib/validation";
-import { coordenadaDaObra, MOTIVO_GPS, ORIGEM_GPS } from "@/lib/obras/coordenadaCronograma";
+import { coordenadaDaObra, distanciaKm, LIMITE_LONGE_KM, MOTIVO_GPS, ORIGEM_GPS } from "@/lib/obras/coordenadaCronograma";
 import { enviarPushParaTodos } from "@/lib/push/enviarPush";
 
 export async function GET(req: Request) {
@@ -71,6 +71,18 @@ export async function POST(req: Request) {
       }
     }
   }
+  // GPS do celular a mais de 3 km da coordenada da obra no Cronograma: foto acusada como "longe da obra"
+  let longe: { km: number } | null = null;
+  const comGpsProprio = fotos.filter((f) => f.lat != null && f.lon != null && f.gpsFonte !== "planilha");
+  if (comGpsProprio.length) {
+    const obraC = await coordenadaDaObra(parsed.data.obra);
+    if (obraC) {
+      for (const f of comGpsProprio) {
+        const km = distanciaKm({ lat: f.lat!, lon: f.lon! }, obraC);
+        if (km > LIMITE_LONGE_KM && (!longe || km > longe.km)) longe = { km };
+      }
+    }
+  }
   // Toda coordenada que não veio do GPS normal do celular é sinalizada em "Avisos de GPS"
   const usouPlanilha = fotos.filter((f) => f.gpsFonte);
   const semNada = fotos.filter((f) => f.lat == null || f.lon == null);
@@ -80,6 +92,10 @@ export async function POST(req: Request) {
     const jaAvisado = parsed.data.turnoServerId && (usouPlanilha.length || semNada.length)
       ? (await db.select({ id: registros.id }).from(registros)
           .where(and(eq(registros.turnoId, parsed.data.turnoServerId), sql`jsonb_path_exists(${registros.fotos}, '$[*] ? (exists(@.gpsFonte))')`)).limit(1)).length > 0
+      : false;
+    // "longe da obra": também uma vez por turno (o primeiro registro do turno já avisou)
+    const longeJaAvisado = longe && parsed.data.turnoServerId
+      ? (await db.select({ id: registros.id }).from(registros).where(eq(registros.turnoId, parsed.data.turnoServerId)).limit(1)).length > 0
       : false;
 
     await db.insert(registros).values({
@@ -101,6 +117,14 @@ export async function POST(req: Request) {
           ? { titulo: "⚠️ Foto sem coordenada", corpo: `${operador.nome} · obra ${parsed.data.obra}: ${motivo}, e a obra não tem coordenada no Cronograma de Obras.`, url: "/?tela=avisos-gps" }
           : { titulo: "📍 Foto sem o GPS do celular", corpo: `${operador.nome} · obra ${parsed.data.obra}: ${motivo}. Coordenada usada: ${ORIGEM_GPS[usouPlanilha[0].gpsFonte ?? ""] ?? "outra fonte"}.`, url: "/?tela=avisos-gps" }
       ).catch((err) => console.error("Falha no aviso de GPS:", err));
+    }
+
+    if (longe && !longeJaAvisado) {
+      await enviarPushParaTodos({
+        titulo: "📏 Foto longe da obra",
+        corpo: `${operador.nome} · obra ${parsed.data.obra}: GPS do celular a ${longe.km.toFixed(1)} km da coordenada da obra no Cronograma.`,
+        url: "/?tela=avisos-gps",
+      }).catch((err) => console.error("Falha no aviso de foto longe da obra:", err));
     }
 
     return NextResponse.json({ sucesso: true });
