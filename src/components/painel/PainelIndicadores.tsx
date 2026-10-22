@@ -46,7 +46,7 @@ function agregarPor(lista: RegistroLinha[], campo: "operador" | "tipoCava" | "ob
     .sort((a, b) => b.cavas - a.cavas);
 }
 
-const CORES_BARRA = ["#1a73e8", "#1e8e3e", "#e8710a", "#9334e6", "#d93025", "#12939a", "#e52592", "#795548"];
+const CORES_BARRA = ["#1f8a4c", "#2f9e4b", "#e8710a", "#9334e6", "#d93025", "#12939a", "#e52592", "#795548"];
 
 function GraficoBarras({ linhas }: { linhas: LinhaAgregada[] }) {
   const max = Math.max(1, ...linhas.map((l) => l.cavas));
@@ -57,7 +57,7 @@ function GraficoBarras({ linhas }: { linhas: LinhaAgregada[] }) {
           <div style={{ width: 180, fontSize: 12, color: "#444", textAlign: "right", flexShrink: 0 }}>
             {l.chave}
           </div>
-          <div style={{ flex: 1, background: "#f0f4f8", borderRadius: 6, overflow: "hidden" }}>
+          <div style={{ flex: 1, background: "#f2f5f4", borderRadius: 6, overflow: "hidden" }}>
             <div
               style={{
                 width: `${Math.max(4, (l.cavas / max) * 100)}%`,
@@ -126,12 +126,12 @@ function agregarMediaCavaPor(lista: RegistroLinha[], campo: "obra" | "operador")
 function TabelaMediaCavas({ titulo, colunaChave, descricao, linhas }: { titulo: string; colunaChave: string; descricao: string; linhas: MediaCavas[] }) {
   return (
     <div style={{ marginBottom: 28 }}>
-      <h3 style={{ color: "#1B4FA2", fontSize: 17, marginBottom: 8 }}>{titulo}</h3>
+      <h3 style={{ color: "#0f3b3c", fontSize: 17, marginBottom: 8 }}>{titulo}</h3>
       <p style={{ fontSize: 13, color: "#666", marginBottom: 8 }}>{descricao}</p>
       <div style={{ overflowX: "auto" }}>
         <table style={{ width: "100%", borderCollapse: "collapse" }}>
           <thead>
-            <tr style={{ textAlign: "left", borderBottom: "2px solid #e0e0e0" }}>
+            <tr style={{ textAlign: "left", borderBottom: "2px solid #dfe7e3" }}>
               <th style={{ padding: 8 }}>{colunaChave}</th>
               <th style={{ padding: 8 }}>Cavas</th>
               <th style={{ padding: 8 }}>Dias trabalhados</th>
@@ -162,13 +162,13 @@ function TabelaMediaCavas({ titulo, colunaChave, descricao, linhas }: { titulo: 
 }
 
 const CORES_TIPO: Record<string, string> = {
-  "Cava Normal": "#1a73e8",
+  "Cava Normal": "#1f8a4c",
   "Cava em Rocha": "#e8710a",
   Blaster: "#d93025",
   Rompedor: "#795548",
   "Cava Iniciada": "#9334e6",
   "Cava Furada": "#12939a",
-  "Limpeza de Cava": "#1e8e3e",
+  "Limpeza de Cava": "#2f9e4b",
 };
 
 function GraficoBarrasEmpilhadasPorTipo({ linhas }: { linhas: ObraPorTipo[] }) {
@@ -191,7 +191,7 @@ function GraficoBarrasEmpilhadasPorTipo({ linhas }: { linhas: ObraPorTipo[] }) {
             <div style={{ width: 140, fontSize: 12, color: "#444", textAlign: "right", flexShrink: 0, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>
               {l.obra}
             </div>
-            <div style={{ flex: 1, display: "flex", background: "#f0f4f8", borderRadius: 6, overflow: "hidden" }}>
+            <div style={{ flex: 1, display: "flex", background: "#f2f5f4", borderRadius: 6, overflow: "hidden" }}>
               {tiposPresentes.map((tipo) => {
                 const valor = l.porTipo[tipo] || 0;
                 if (!valor) return null;
@@ -229,12 +229,12 @@ function TabelaAgregada({
 }: { titulo: string; colunaChave: string; linhas: LinhaAgregada[]; diasPeriodo?: number }) {
   return (
     <div style={{ marginBottom: 28 }}>
-      <h3 style={{ color: "#1B4FA2", fontSize: 17, marginBottom: 8 }}>{titulo}</h3>
+      <h3 style={{ color: "#0f3b3c", fontSize: 17, marginBottom: 8 }}>{titulo}</h3>
       <GraficoBarras linhas={linhas} />
       <div style={{ overflowX: "auto" }}>
         <table style={{ width: "100%", borderCollapse: "collapse" }}>
           <thead>
-            <tr style={{ textAlign: "left", borderBottom: "2px solid #e0e0e0" }}>
+            <tr style={{ textAlign: "left", borderBottom: "2px solid #dfe7e3" }}>
               <th style={{ padding: 8 }}>{colunaChave}</th>
               <th style={{ padding: 8 }}>Registros</th>
               <th style={{ padding: 8 }}>Cavas</th>
@@ -302,7 +302,7 @@ const SEM_JUSTIFICATIVA = "Sem justificativa";
 
 const CORES_MOTIVO: Record<string, string> = {
   [SEM_JUSTIFICATIVA]: "#d93025",
-  Folga: "#1a73e8",
+  Folga: "#1f8a4c",
   Falta: "#b71c1c",
   "Atestado médico": "#9334e6",
   "Exame periódico": "#7cb342",
@@ -310,7 +310,7 @@ const CORES_MOTIVO: Record<string, string> = {
   "Chuva / Clima": "#0288d1",
   "Manutenção de equipamento": "#795548",
   "Deslocamento entre obras": "#e8710a",
-  "Sem obra disponível": "#5f6368",
+  "Sem obra disponível": "#5d6f6c",
   Outro: "#e52592",
 };
 
@@ -358,7 +358,7 @@ function GraficoMotivosPorOperador({ linhas }: { linhas: MotivosPorOperador[] })
         {linhas.map((l) => (
           <div key={l.operador} style={{ display: "flex", alignItems: "center", gap: 8 }}>
             <div style={{ width: 180, fontSize: 12, color: "#444", textAlign: "right", flexShrink: 0 }}>{l.operador}</div>
-            <div style={{ flex: 1, display: "flex", background: "#f0f4f8", borderRadius: 6, overflow: "hidden", minHeight: 24 }}>
+            <div style={{ flex: 1, display: "flex", background: "#f2f5f4", borderRadius: 6, overflow: "hidden", minHeight: 24 }}>
               {motivosPresentes.map((motivo) => {
                 const valor = l.porMotivo[motivo] || 0;
                 if (!valor) return null;
@@ -405,12 +405,12 @@ function GraficoDiasLancados({ linhas }: { linhas: DiasLancadosPorOperador[] }) 
       {linhas.map((l) => (
         <div key={l.operador} style={{ display: "flex", alignItems: "center", gap: 8 }}>
           <div style={{ width: 180, fontSize: 12, color: "#444", textAlign: "right", flexShrink: 0 }}>{l.operador}</div>
-          <div style={{ flex: 1, background: "#f0f4f8", borderRadius: 6, overflow: "hidden", minHeight: 24 }}>
+          <div style={{ flex: 1, background: "#f2f5f4", borderRadius: 6, overflow: "hidden", minHeight: 24 }}>
             <div
               title={`${l.operador}: ${l.diasLancados} de ${l.totalDias} dia(s)`}
               style={{
                 width: `${(l.diasLancados / max) * 100}%`,
-                background: "#1e8e3e",
+                background: "#2f9e4b",
                 color: "#fff",
                 fontSize: 11,
                 fontWeight: 700,
@@ -522,7 +522,7 @@ function TabelaFrequencia({
           <div className="operador-label">Sem justificativa</div>
         </div>
         <div className="operador-card" style={{ flex: "1 1 140px" }}>
-          <div className="operador-nome" style={{ color: "#1e8e3e" }}>
+          <div className="operador-nome" style={{ color: "#2f9e4b" }}>
             {totalJustificado}
           </div>
           <div className="operador-label">Justificados</div>
@@ -530,7 +530,7 @@ function TabelaFrequencia({
       </div>
 
       <div style={{ marginBottom: 28 }}>
-        <h3 style={{ color: "#1B4FA2", fontSize: 17, marginBottom: 8 }}>
+        <h3 style={{ color: "#0f3b3c", fontSize: 17, marginBottom: 8 }}>
           Dias Lançados por Operador <span style={{ color: "#666", fontWeight: 400, fontSize: 14 }}>({totalDiasLancados} no total)</span>
         </h3>
         <p style={{ fontSize: 13, color: "#666", marginBottom: 8 }}>
@@ -540,7 +540,7 @@ function TabelaFrequencia({
       </div>
 
       <div style={{ marginBottom: 28 }}>
-        <h3 style={{ color: "#1B4FA2", fontSize: 17, marginBottom: 8 }}>Motivos por Operador</h3>
+        <h3 style={{ color: "#0f3b3c", fontSize: 17, marginBottom: 8 }}>Motivos por Operador</h3>
         <p style={{ fontSize: 13, color: "#666", marginBottom: 8 }}>
           Dias sem lançamento de cada operador, separados por motivo (inclui os ainda sem justificativa).
         </p>
@@ -548,7 +548,7 @@ function TabelaFrequencia({
       </div>
 
       <div style={{ marginBottom: 28 }}>
-        <h3 style={{ color: "#1B4FA2", fontSize: 17, marginBottom: 8 }}>Resumo — dias sem lançamento</h3>
+        <h3 style={{ color: "#0f3b3c", fontSize: 17, marginBottom: 8 }}>Resumo — dias sem lançamento</h3>
         <p style={{ fontSize: 13, color: "#666", marginBottom: 8 }}>
           De {dias.length} dia(s) no período, quantos cada operador ficou sem lançar nenhum registro — e quantos
           desses ainda não têm justificativa.
@@ -556,7 +556,7 @@ function TabelaFrequencia({
         <div style={{ overflowX: "auto" }}>
           <table style={{ width: "100%", borderCollapse: "collapse" }}>
             <thead>
-              <tr style={{ textAlign: "left", borderBottom: "2px solid #e0e0e0" }}>
+              <tr style={{ textAlign: "left", borderBottom: "2px solid #dfe7e3" }}>
                 <th style={{ padding: 8 }}>Operador</th>
                 <th style={{ padding: 8 }}>Dias sem lançar</th>
                 <th style={{ padding: 8 }}>Sem justificativa</th>
@@ -568,7 +568,7 @@ function TabelaFrequencia({
                 <tr key={o.operador} style={{ borderBottom: "1px solid #eee" }}>
                   <td style={{ padding: 8 }}>{o.operador}</td>
                   <td style={{ padding: 8 }}>{o.diasSemLancar}</td>
-                  <td style={{ padding: 8, fontWeight: 700, color: o.semJustificativa > 0 ? "#d93025" : "#1e8e3e" }}>
+                  <td style={{ padding: 8, fontWeight: 700, color: o.semJustificativa > 0 ? "#d93025" : "#2f9e4b" }}>
                     {o.semJustificativa}
                   </td>
                   <td style={{ padding: 8 }}>{o.totalDias - o.diasSemLancar}</td>
@@ -580,7 +580,7 @@ function TabelaFrequencia({
       </div>
 
       <div style={{ marginBottom: 28 }}>
-        <h3 style={{ color: "#1B4FA2", fontSize: 17, marginBottom: 8 }}>Dia a dia</h3>
+        <h3 style={{ color: "#0f3b3c", fontSize: 17, marginBottom: 8 }}>Dia a dia</h3>
         <p style={{ fontSize: 13, color: "#666", marginBottom: 8 }}>
           ✓ lançou pelo menos um registro naquele dia. Nos dias sem lançamento, escolha um motivo padrão pra
           justificar. {carregandoJust && "Carregando justificativas..."}
@@ -588,7 +588,7 @@ function TabelaFrequencia({
         <div style={{ overflowX: "auto" }}>
           <table style={{ width: "100%", borderCollapse: "collapse" }}>
             <thead>
-              <tr style={{ textAlign: "left", borderBottom: "2px solid #e0e0e0" }}>
+              <tr style={{ textAlign: "left", borderBottom: "2px solid #dfe7e3" }}>
                 <th style={{ padding: 8 }}>Data</th>
                 {OPERADORES_CAMPO.map((op) => (
                   <th key={op.cpf} style={{ padding: 8, fontSize: 11, whiteSpace: "nowrap" }}>
@@ -605,7 +605,7 @@ function TabelaFrequencia({
                     const lancou = porDia.get(dia)?.has(op.nome);
                     if (lancou) {
                       return (
-                        <td key={op.cpf} style={{ padding: 8, textAlign: "center", color: "#1e8e3e", fontWeight: 700 }}>
+                        <td key={op.cpf} style={{ padding: 8, textAlign: "center", color: "#2f9e4b", fontWeight: 700 }}>
                           ✓
                         </td>
                       );
@@ -621,7 +621,7 @@ function TabelaFrequencia({
                             padding: "4px 2px",
                             borderRadius: 4,
                             border: "1px solid #ddd",
-                            color: motivoAtual ? "#1B4FA2" : "#d93025",
+                            color: motivoAtual ? "#0f3b3c" : "#d93025",
                             fontWeight: 700,
                             maxWidth: 110,
                           }}
@@ -898,8 +898,8 @@ function AbaCavasTrado({ dataInicio, dataFim, cpfAdmin }: { dataInicio: string; 
 
   return (
     <div>
-      <div style={{ marginBottom: 28, background: "#f0f4f8", borderRadius: 10, padding: 16 }}>
-        <h3 style={{ color: "#1B4FA2", fontSize: 17, marginBottom: 12 }}>Lançar produção do dia</h3>
+      <div style={{ marginBottom: 28, background: "#f2f5f4", borderRadius: 10, padding: 16 }}>
+        <h3 style={{ color: "#0f3b3c", fontSize: 17, marginBottom: 12 }}>Lançar produção do dia</h3>
         {erro && <p style={{ color: "#d93025", marginBottom: 8 }}>{erro}</p>}
         <div style={{ display: "flex", gap: 12, flexWrap: "wrap", alignItems: "end" }}>
           <label style={{ fontSize: 13, color: "#666" }}>
@@ -1002,7 +1002,7 @@ function AbaCavasTrado({ dataInicio, dataFim, cpfAdmin }: { dataInicio: string; 
       <div style={{ marginBottom: 28 }}>
         <button
           onClick={() => setMostrarGerenciar((v) => !v)}
-          style={{ border: "none", background: "none", color: "#1B4FA2", cursor: "pointer", fontWeight: 700, fontSize: 14, padding: 0, marginBottom: 12 }}
+          style={{ border: "none", background: "none", color: "#0f3b3c", cursor: "pointer", fontWeight: 700, fontSize: 14, padding: 0, marginBottom: 12 }}
         >
           {mostrarGerenciar ? "▾" : "▸"} Gerenciar equipes ({equipes.length})
         </button>
@@ -1011,7 +1011,7 @@ function AbaCavasTrado({ dataInicio, dataFim, cpfAdmin }: { dataInicio: string; 
             <div style={{ overflowX: "auto", marginBottom: 12 }}>
               <table style={{ width: "100%", borderCollapse: "collapse" }}>
                 <thead>
-                  <tr style={{ textAlign: "left", borderBottom: "2px solid #e0e0e0" }}>
+                  <tr style={{ textAlign: "left", borderBottom: "2px solid #dfe7e3" }}>
                     <th style={{ padding: 6 }}>Cidade</th>
                     <th style={{ padding: 6 }}>Responsável</th>
                     <th style={{ padding: 6 }}>Equipamento</th>
@@ -1034,7 +1034,7 @@ function AbaCavasTrado({ dataInicio, dataFim, cpfAdmin }: { dataInicio: string; 
               </table>
             </div>
 
-            <div style={{ display: "flex", gap: 12, flexWrap: "wrap", alignItems: "end", background: "#f0f4f8", borderRadius: 10, padding: 12 }}>
+            <div style={{ display: "flex", gap: 12, flexWrap: "wrap", alignItems: "end", background: "#f2f5f4", borderRadius: 10, padding: 12 }}>
               <label style={{ fontSize: 13, color: "#666" }}>
                 Cidade
                 <br />
@@ -1079,10 +1079,10 @@ function AbaCavasTrado({ dataInicio, dataFim, cpfAdmin }: { dataInicio: string; 
       </div>
 
       <div style={{ marginBottom: 28 }}>
-        <h3 style={{ color: "#1B4FA2", fontSize: 17, marginBottom: 8 }}>Trado Novo × Trado Antigo</h3>
+        <h3 style={{ color: "#0f3b3c", fontSize: 17, marginBottom: 8 }}>Trado Novo × Trado Antigo</h3>
         <div style={{ display: "flex", gap: 16, flexWrap: "wrap" }}>
-          <div className="operador-card" style={{ flex: "1 1 200px", borderColor: "#1a73e8" }}>
-            <div className="operador-nome" style={{ color: "#1a73e8" }}>
+          <div className="operador-card" style={{ flex: "1 1 200px", borderColor: "#1f8a4c" }}>
+            <div className="operador-nome" style={{ color: "#1f8a4c" }}>
               {totalNovo}
             </div>
             <div className="operador-label">Trado Novo · média {mediaNovo.toFixed(1)}/dia ({diasNovo} dia(s))</div>
@@ -1098,13 +1098,13 @@ function AbaCavasTrado({ dataInicio, dataFim, cpfAdmin }: { dataInicio: string; 
 
       {dias.length > 0 && (
         <div style={{ marginBottom: 28 }}>
-          <h3 style={{ color: "#1B4FA2", fontSize: 17, marginBottom: 8 }}>Dia a dia — Novo × Antigo</h3>
+          <h3 style={{ color: "#0f3b3c", fontSize: 17, marginBottom: 8 }}>Dia a dia — Novo × Antigo</h3>
           <div style={{ overflowX: "auto" }}>
             <table style={{ width: "100%", borderCollapse: "collapse" }}>
               <thead>
-                <tr style={{ textAlign: "left", borderBottom: "2px solid #e0e0e0" }}>
+                <tr style={{ textAlign: "left", borderBottom: "2px solid #dfe7e3" }}>
                   <th style={{ padding: 8 }}>Data</th>
-                  <th style={{ padding: 8, color: "#1a73e8" }}>Trado Novo</th>
+                  <th style={{ padding: 8, color: "#1f8a4c" }}>Trado Novo</th>
                   <th style={{ padding: 8, color: "#e8710a" }}>Trado Antigo</th>
                 </tr>
               </thead>
@@ -1117,7 +1117,7 @@ function AbaCavasTrado({ dataInicio, dataFim, cpfAdmin }: { dataInicio: string; 
                   return (
                     <tr key={dia} style={{ borderBottom: "1px solid #eee" }}>
                       <td style={{ padding: 8 }}>{formatarDataCurta(dia)}</td>
-                      <td style={{ padding: 8, fontWeight: doDiaNovo.length ? 700 : 400, color: doDiaNovo.length ? "#1a73e8" : "#bbb" }}>
+                      <td style={{ padding: 8, fontWeight: doDiaNovo.length ? 700 : 400, color: doDiaNovo.length ? "#1f8a4c" : "#bbb" }}>
                         {doDiaNovo.length ? somaNovo : "—"}
                       </td>
                       <td style={{ padding: 8, fontWeight: doDiaAntigo.length ? 700 : 400, color: doDiaAntigo.length ? "#e8710a" : "#bbb" }}>
@@ -1133,11 +1133,11 @@ function AbaCavasTrado({ dataInicio, dataFim, cpfAdmin }: { dataInicio: string; 
       )}
 
       <div style={{ marginBottom: 28 }}>
-        <h3 style={{ color: "#1B4FA2", fontSize: 17, marginBottom: 8 }}>Resumo por equipe</h3>
+        <h3 style={{ color: "#0f3b3c", fontSize: 17, marginBottom: 8 }}>Resumo por equipe</h3>
         <div style={{ overflowX: "auto" }}>
           <table style={{ width: "100%", borderCollapse: "collapse" }}>
             <thead>
-              <tr style={{ textAlign: "left", borderBottom: "2px solid #e0e0e0" }}>
+              <tr style={{ textAlign: "left", borderBottom: "2px solid #dfe7e3" }}>
                 <th style={{ padding: 8 }}>Equipe</th>
                 <th style={{ padding: 8 }}>Responsável</th>
                 <th style={{ padding: 8 }}>Equipamento</th>
@@ -1170,7 +1170,7 @@ function AbaCavasTrado({ dataInicio, dataFim, cpfAdmin }: { dataInicio: string; 
       </div>
 
       <div style={{ marginBottom: 28 }}>
-        <h3 style={{ color: "#1B4FA2", fontSize: 17, marginBottom: 8 }}>Aproveitamento por equipe</h3>
+        <h3 style={{ color: "#0f3b3c", fontSize: 17, marginBottom: 8 }}>Aproveitamento por equipe</h3>
         <p style={{ fontSize: 13, color: "#666", marginBottom: 8 }}>
           De todas as obras onde a equipe usou o trado, quantas ela conseguiu fazer de verdade. % de sucesso = obras
           concluídas ÷ obras c/ trado usado.
@@ -1178,7 +1178,7 @@ function AbaCavasTrado({ dataInicio, dataFim, cpfAdmin }: { dataInicio: string; 
         <div style={{ overflowX: "auto" }}>
           <table style={{ width: "100%", borderCollapse: "collapse" }}>
             <thead>
-              <tr style={{ textAlign: "left", borderBottom: "2px solid #e0e0e0" }}>
+              <tr style={{ textAlign: "left", borderBottom: "2px solid #dfe7e3" }}>
                 <th style={{ padding: 8 }}>Responsável</th>
                 <th style={{ padding: 8 }}>Equipamento</th>
                 <th style={{ padding: 8 }}>Obras c/ trado usado</th>
@@ -1206,7 +1206,7 @@ function AbaCavasTrado({ dataInicio, dataFim, cpfAdmin }: { dataInicio: string; 
                       {eq.pctNaoConseguiu === null ? "—" : `${eq.pctNaoConseguiu.toFixed(0)}%`}
                     </td>
                     <td style={{ padding: 8 }}>{eq.totalCavas}</td>
-                    <td style={{ padding: 8, fontWeight: 700, color: eq.pctSucesso === null ? "#bbb" : "#1B4FA2" }}>
+                    <td style={{ padding: 8, fontWeight: 700, color: eq.pctSucesso === null ? "#bbb" : "#0f3b3c" }}>
                       {eq.pctSucesso === null ? "—" : `${eq.pctSucesso.toFixed(0)}%`}
                     </td>
                   </tr>
@@ -1224,13 +1224,13 @@ function AbaCavasTrado({ dataInicio, dataFim, cpfAdmin }: { dataInicio: string; 
       </div>
 
       <div style={{ marginBottom: 28 }}>
-        <h3 style={{ color: "#1B4FA2", fontSize: 17, marginBottom: 8 }}>Lançamentos no período</h3>
+        <h3 style={{ color: "#0f3b3c", fontSize: 17, marginBottom: 8 }}>Lançamentos no período</h3>
         {carregando && <p>Carregando...</p>}
         {!carregando && (
           <div style={{ overflowX: "auto" }}>
             <table style={{ width: "100%", borderCollapse: "collapse" }}>
               <thead>
-                <tr style={{ textAlign: "left", borderBottom: "2px solid #e0e0e0" }}>
+                <tr style={{ textAlign: "left", borderBottom: "2px solid #dfe7e3" }}>
                   <th style={{ padding: 8 }}>Data</th>
                   <th style={{ padding: 8 }}>Equipe</th>
                   <th style={{ padding: 8 }}>Obras c/trado</th>
@@ -1315,7 +1315,7 @@ export default function PainelIndicadores({ cpfAdmin, onVoltar }: { cpfAdmin: st
   return (
     <div style={{ maxWidth: 1000, margin: "0 auto", padding: 24 }}>
       <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 16 }}>
-        <h1 style={{ color: "#1B4FA2", fontSize: 26 }}>Painel de Indicadores</h1>
+        <h1 style={{ color: "#0f3b3c", fontSize: 26 }}>Painel de Indicadores</h1>
         {onVoltar && (
           <button className="btn-voltar" style={{ padding: "10px 16px" }} onClick={onVoltar}>
             ← Menu
@@ -1366,7 +1366,7 @@ export default function PainelIndicadores({ cpfAdmin, onVoltar }: { cpfAdmin: st
         </label>
       </div>
 
-      <div style={{ display: "flex", gap: 8, marginBottom: 20, borderBottom: "1px solid #e0e0e0" }}>
+      <div style={{ display: "flex", gap: 8, marginBottom: 20, borderBottom: "1px solid #dfe7e3" }}>
         <button
           onClick={() => setAba("indicadores")}
           style={{
@@ -1376,8 +1376,8 @@ export default function PainelIndicadores({ cpfAdmin, onVoltar }: { cpfAdmin: st
             cursor: "pointer",
             fontSize: 14,
             fontWeight: 700,
-            color: aba === "indicadores" ? "#1B4FA2" : "#888",
-            borderBottom: aba === "indicadores" ? "3px solid #1B4FA2" : "3px solid transparent",
+            color: aba === "indicadores" ? "#0f3b3c" : "#888",
+            borderBottom: aba === "indicadores" ? "3px solid #0f3b3c" : "3px solid transparent",
           }}
         >
           Indicadores
@@ -1391,8 +1391,8 @@ export default function PainelIndicadores({ cpfAdmin, onVoltar }: { cpfAdmin: st
             cursor: "pointer",
             fontSize: 14,
             fontWeight: 700,
-            color: aba === "frequencia" ? "#1B4FA2" : "#888",
-            borderBottom: aba === "frequencia" ? "3px solid #1B4FA2" : "3px solid transparent",
+            color: aba === "frequencia" ? "#0f3b3c" : "#888",
+            borderBottom: aba === "frequencia" ? "3px solid #0f3b3c" : "3px solid transparent",
           }}
         >
           Frequência
@@ -1406,8 +1406,8 @@ export default function PainelIndicadores({ cpfAdmin, onVoltar }: { cpfAdmin: st
             cursor: "pointer",
             fontSize: 14,
             fontWeight: 700,
-            color: aba === "trado" ? "#1B4FA2" : "#888",
-            borderBottom: aba === "trado" ? "3px solid #1B4FA2" : "3px solid transparent",
+            color: aba === "trado" ? "#0f3b3c" : "#888",
+            borderBottom: aba === "trado" ? "3px solid #0f3b3c" : "3px solid transparent",
           }}
         >
           Trado
@@ -1455,9 +1455,9 @@ export default function PainelIndicadores({ cpfAdmin, onVoltar }: { cpfAdmin: st
             </div>
           </div>
           {funcionario && (
-            <p style={{ color: "#1B4FA2", fontWeight: 600, margin: "-12px 0 20px" }}>
+            <p style={{ color: "#0f3b3c", fontWeight: 600, margin: "-12px 0 20px" }}>
               Mostrando só {funcionario} ·{" "}
-              <button style={{ border: "none", background: "none", color: "#1a73e8", cursor: "pointer", padding: 0 }} onClick={() => setFuncionario("")}>
+              <button style={{ border: "none", background: "none", color: "#1f8a4c", cursor: "pointer", padding: 0 }} onClick={() => setFuncionario("")}>
                 ver todos
               </button>
             </p>
@@ -1475,12 +1475,12 @@ export default function PainelIndicadores({ cpfAdmin, onVoltar }: { cpfAdmin: st
           <TabelaAgregada titulo="Por Tipo de Cava" colunaChave="Tipo de Cava" linhas={agregarPor(listaVis, "tipoCava")} />
 
           <div style={{ marginBottom: 28 }}>
-            <h3 style={{ color: "#1B4FA2", fontSize: 17, marginBottom: 8 }}>Por Obra</h3>
+            <h3 style={{ color: "#0f3b3c", fontSize: 17, marginBottom: 8 }}>Por Obra</h3>
             <GraficoBarrasEmpilhadasPorTipo linhas={agregarObraPorTipo(listaVis)} />
             <div style={{ overflowX: "auto" }}>
               <table style={{ width: "100%", borderCollapse: "collapse" }}>
                 <thead>
-                  <tr style={{ textAlign: "left", borderBottom: "2px solid #e0e0e0" }}>
+                  <tr style={{ textAlign: "left", borderBottom: "2px solid #dfe7e3" }}>
                     <th style={{ padding: 8 }}>Obra</th>
                     <th style={{ padding: 8 }}>Registros</th>
                     <th style={{ padding: 8 }}>Cavas</th>

@@ -32,7 +32,7 @@ export default function StepObservacao({ valor, onMudar, enviando, progresso, er
             marginTop: 12,
             height: 8,
             borderRadius: 4,
-            background: "#e0e0e0",
+            background: "#dfe7e3",
             overflow: "hidden",
           }}
         >
@@ -40,7 +40,7 @@ export default function StepObservacao({ valor, onMudar, enviando, progresso, er
             style={{
               height: "100%",
               width: `${Math.round((progresso.feitas / progresso.total) * 100)}%`,
-              background: "linear-gradient(135deg,#137333,#1e8e3e)",
+              background: "linear-gradient(135deg,#1f7a4a,#2f9e4b)",
               transition: "width .2s",
             }}
           />

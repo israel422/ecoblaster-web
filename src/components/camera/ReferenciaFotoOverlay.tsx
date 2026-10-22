@@ -49,7 +49,7 @@ export default function ReferenciaFotoOverlay({ referencia, onProsseguir, onEsco
             padding: 10,
             border: "none",
             background: "none",
-            color: "#5f6368",
+            color: "#5d6f6c",
             fontSize: 14,
             textDecoration: "underline",
             cursor: "pointer",

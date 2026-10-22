@@ -51,9 +51,9 @@ export default function PhotoPreviewModal({ blob, onConfirmar, onTirarNovamente 
             fontSize: 16,
             fontWeight: 700,
             cursor: "pointer",
-            border: "2px solid #e0e0e0",
+            border: "2px solid #dfe7e3",
             background: "#fff",
-            color: "#5f6368",
+            color: "#5d6f6c",
           }}
         >
           🔁 Tirar novamente
@@ -69,7 +69,7 @@ export default function PhotoPreviewModal({ blob, onConfirmar, onTirarNovamente 
             fontWeight: 700,
             cursor: "pointer",
             border: "none",
-            background: "linear-gradient(135deg,#137333,#1e8e3e)",
+            background: "linear-gradient(135deg,#1f7a4a,#2f9e4b)",
             color: "#fff",
           }}
         >

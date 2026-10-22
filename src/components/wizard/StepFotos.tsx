@@ -182,9 +182,9 @@ export default function StepFotos({
                   style={{
                     fontSize: 15,
                     fontWeight: 700,
-                    color: "#1b4fa2",
+                    color: "#0f3b3c",
                     padding: "18px 0 8px",
-                    borderTop: "2px solid #e0e8ff",
+                    borderTop: "2px solid #d5e8dc",
                     marginTop: 4,
                   }}
                 >
@@ -197,7 +197,7 @@ export default function StepFotos({
                   alignItems: "center",
                   gap: 14,
                   padding: "14px 0",
-                  borderBottom: "1px solid #e8ecf0",
+                  borderBottom: "1px solid #e1e8e5",
                   cursor: item.blob ? "default" : "pointer",
                 }}
                 onClick={() => {
@@ -223,7 +223,7 @@ export default function StepFotos({
                   {item.blob ? "✅" : "📷"}
                 </div>
                 <div style={{ flex: 1, minWidth: 0 }}>
-                  <div style={{ fontSize: 15, fontWeight: 600, color: "#202124", lineHeight: 1.3 }}>
+                  <div style={{ fontSize: 15, fontWeight: 600, color: "#173a3a", lineHeight: 1.3 }}>
                     Foto {item.fotoNum}: {item.label}
                   </div>
                   <div style={{ fontSize: 12, color: "#888", marginTop: 3 }}>
@@ -320,7 +320,7 @@ function PhotoThumb({ blob }: { blob: Blob }) {
 // Faixa de localização na tela de fotos: diz se a coordenada vai sair na foto e como resolver
 function AvisoGps({ status, precisao, obtendo, temPlanilha }: { status: string; precisao?: number; obtendo: boolean; temPlanilha: boolean }) {
   const base = { borderRadius: 10, padding: "10px 12px", margin: "8px 0 4px", fontSize: 13, lineHeight: 1.4 } as const;
-  if (obtendo) return <div style={{ ...base, background: "#eef4ff", color: "#1b4fa2" }}>📍 Obtendo localização para a foto…</div>;
+  if (obtendo) return <div style={{ ...base, background: "#eef4ff", color: "#0f3b3c" }}>📍 Obtendo localização para a foto…</div>;
   if (status === "ok")
     return (
       <div style={{ ...base, background: "#e6f4ea", color: "#1e7b45" }}>

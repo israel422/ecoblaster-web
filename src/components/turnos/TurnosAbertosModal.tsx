@@ -172,7 +172,7 @@ export default function TurnosAbertosModal({
               textAlign: "center",
               marginTop: 12,
               fontSize: 13,
-              color: "#1a73e8",
+              color: "#1f8a4c",
               background: "none",
               border: "none",
               cursor: "pointer",

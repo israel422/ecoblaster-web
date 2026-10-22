@@ -44,14 +44,14 @@ export default function AvisosGps({ cpfAdmin, onVoltar }: Props) {
   return (
     <div style={{ maxWidth: 680, margin: "0 auto", padding: 24 }}>
       <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 8 }}>
-        <h1 style={{ color: "#1B4FA2", fontSize: 26 }}>Avisos de GPS</h1>
+        <h1 style={{ color: "#0f3b3c", fontSize: 26 }}>Avisos de GPS</h1>
         {onVoltar && (
           <button className="btn-voltar" style={{ padding: "10px 16px" }} onClick={onVoltar}>
             ← Menu
           </button>
         )}
       </div>
-      <div style={{ color: "#5f6368", fontSize: 13, marginBottom: 14 }}>
+      <div style={{ color: "#5d6f6c", fontSize: 13, marginBottom: 14 }}>
         Turnos em que o celular não conseguiu o GPS e a foto recebeu a coordenada da obra no Cronograma de Obras.
         Resolva o problema no celular do operador para a coordenada voltar a ser a exata da cava.
       </div>
@@ -81,13 +81,13 @@ export default function AvisosGps({ cpfAdmin, onVoltar }: Props) {
         </div>
       )}
 
-      {!carregando && avisos.length === 0 && <div style={{ color: "#1e8e3e", fontWeight: 600 }}>✅ Nenhuma foto sem GPS do celular nesse período.</div>}
+      {!carregando && avisos.length === 0 && <div style={{ color: "#2f9e4b", fontWeight: 600 }}>✅ Nenhuma foto sem GPS do celular nesse período.</div>}
 
       {avisos.map((a, i) => (
-        <div key={i} style={{ padding: "12px 0", borderBottom: "1px solid #e8ecf0" }}>
+        <div key={i} style={{ padding: "12px 0", borderBottom: "1px solid #e1e8e5" }}>
           <div style={{ display: "flex", justifyContent: "space-between", gap: 10 }}>
             <b>{a.operador}</b>
-            <span style={{ color: "#5f6368", fontSize: 13 }}>{dataBR(a.data)}</span>
+            <span style={{ color: "#5d6f6c", fontSize: 13 }}>{dataBR(a.data)}</span>
           </div>
           <div style={{ fontSize: 14, marginTop: 2 }}>
             Obra <b>{a.obra}</b> · {a.fotosPlanilha + a.fotosSemNada} de {a.fotos} fotos sem GPS do celular
@@ -97,7 +97,9 @@ export default function AvisosGps({ cpfAdmin, onVoltar }: Props) {
           </div>
           <div style={{ fontSize: 12, color: a.fotosSemNada ? "#a32020" : "#1e7b45", marginTop: 2 }}>
             {a.fotosSemNada
-              ? `⚠️ ${a.fotosSemNada} foto(s) ficaram sem coordenada: a obra não tem coordenada no Cronograma de Obras.`
+              ? Object.keys(a.motivos).some((m) => m.includes("app antigo"))
+                ? `⚠️ ${a.fotosSemNada} foto(s) sem coordenada: tiradas antes da correção do GPS (22/10).`
+                : `⚠️ ${a.fotosSemNada} foto(s) ficaram sem coordenada: a obra não tem coordenada no Cronograma de Obras.`
               : "📍 Coordenada da obra no Cronograma de Obras usada nas fotos."}
           </div>
         </div>

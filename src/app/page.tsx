@@ -7,6 +7,7 @@ import TurnosAbertosModal from "@/components/turnos/TurnosAbertosModal";
 import OfflineBanner from "@/components/OfflineBanner";
 import AlertModal from "@/components/ui/AlertModal";
 import AdminMenu from "@/components/AdminMenu";
+import EcoTopo from "@/components/EcoTopo";
 import PainelFotos from "@/components/painel/PainelFotos";
 import PainelIndicadores from "@/components/painel/PainelIndicadores";
 import GerenciarObras from "@/components/painel/GerenciarObras";
@@ -80,6 +81,13 @@ export default function Home() {
     <>
       <OfflineBanner />
       {!sessao && <LoginScreen onLogin={handleLogin} />}
+      {sessao && (
+        <EcoTopo
+          nome={sessao.nome}
+          papel={sessao.admin ? "Administrador" : "Operador"}
+          onLogo={sessao.admin && telaAdmin !== "menu" ? () => setTelaAdmin("menu") : undefined}
+        />
+      )}
 
       {sessao && sessao.admin && telaAdmin === "menu" && (
         <AdminMenu

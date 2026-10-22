@@ -301,18 +301,21 @@ export default function WizardShell({ sessao, turnoInicial, passoInicial, onAbri
           type="button"
           onClick={onAbrirPainel}
           style={{
-            position: "fixed",
-            top: 8,
-            right: 12,
-            fontSize: 12,
-            color: "#1a73e8",
-            zIndex: 50,
-            background: "none",
-            border: "none",
+            position: "absolute",
+            top: 46,
+            right: 24,
+            fontSize: 13,
+            fontWeight: 700,
+            color: "#1f6e43",
+            zIndex: 5,
+            background: "#fff",
+            border: "1.5px solid #3aa751",
+            borderRadius: 999,
+            padding: "5px 12px",
             cursor: "pointer",
           }}
         >
-          ☰ Menu
+          ← Menu
         </button>
       )}
 

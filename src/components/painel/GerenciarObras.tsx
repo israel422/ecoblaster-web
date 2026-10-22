@@ -96,7 +96,7 @@ export default function GerenciarObras({ cpfAdmin, onVoltar }: Props) {
   return (
     <div style={{ maxWidth: 640, margin: "0 auto", padding: 24 }}>
       <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 16 }}>
-        <h1 style={{ color: "#1B4FA2", fontSize: 26 }}>Obras</h1>
+        <h1 style={{ color: "#0f3b3c", fontSize: 26 }}>Obras</h1>
         {onVoltar && (
           <button className="btn-voltar" style={{ padding: "10px 16px" }} onClick={onVoltar}>
             ← Menu
@@ -125,7 +125,7 @@ export default function GerenciarObras({ cpfAdmin, onVoltar }: Props) {
       </div>
       {erro && <div className="erro-inline">{erro}</div>}
 
-      <div style={{ marginTop: 20, paddingTop: 20, borderTop: "1px solid #e8ecf0" }}>
+      <div style={{ marginTop: 20, paddingTop: 20, borderTop: "1px solid #e1e8e5" }}>
         <div className="passo-sub" style={{ marginBottom: 8 }}>
           Ou cole a lista de todas as obras do mês (uma por linha, ou separadas por vírgula/espaço):
         </div>
@@ -144,7 +144,7 @@ export default function GerenciarObras({ cpfAdmin, onVoltar }: Props) {
         >
           + Adicionar lista
         </button>
-        {resultadoLote && <div style={{ marginTop: 8, color: "#1e8e3e", fontSize: 13 }}>{resultadoLote}</div>}
+        {resultadoLote && <div style={{ marginTop: 8, color: "#2f9e4b", fontSize: 13 }}>{resultadoLote}</div>}
       </div>
 
       <div style={{ marginTop: 20 }}>
@@ -160,7 +160,7 @@ export default function GerenciarObras({ cpfAdmin, onVoltar }: Props) {
               alignItems: "center",
               justifyContent: "space-between",
               padding: "12px 0",
-              borderBottom: "1px solid #e8ecf0",
+              borderBottom: "1px solid #e1e8e5",
             }}
           >
             <span style={{ fontSize: 15, fontWeight: 600 }}>{o}</span>

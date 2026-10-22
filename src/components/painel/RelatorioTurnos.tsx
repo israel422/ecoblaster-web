@@ -44,7 +44,7 @@ export default function RelatorioTurnos({ cpfAdmin, onVoltar }: Props) {
   return (
     <div style={{ maxWidth: 640, margin: "0 auto", padding: 24 }}>
       <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 16 }}>
-        <h1 style={{ color: "#1B4FA2", fontSize: 26 }}>Relatório de Turnos</h1>
+        <h1 style={{ color: "#0f3b3c", fontSize: 26 }}>Relatório de Turnos</h1>
         {onVoltar && (
           <button className="btn-voltar" style={{ padding: "10px 16px" }} onClick={onVoltar}>
             ← Menu
@@ -67,12 +67,12 @@ export default function RelatorioTurnos({ cpfAdmin, onVoltar }: Props) {
       </div>
 
       <div style={{ marginBottom: 24 }}>
-        <div style={{ fontWeight: 700, color: "#1e8e3e", marginBottom: 8 }}>
+        <div style={{ fontWeight: 700, color: "#2f9e4b", marginBottom: 8 }}>
           ✅ Abriram turno ({abriram.length})
         </div>
         {abriram.length === 0 && <div style={{ color: "#888" }}>Ninguém ainda.</div>}
         {abriram.map((o) => (
-          <div key={o.cpf} style={{ padding: "8px 0", borderBottom: "1px solid #e8ecf0" }}>
+          <div key={o.cpf} style={{ padding: "8px 0", borderBottom: "1px solid #e1e8e5" }}>
             {o.nome}
           </div>
         ))}
@@ -84,7 +84,7 @@ export default function RelatorioTurnos({ cpfAdmin, onVoltar }: Props) {
         </div>
         {naoAbriram.length === 0 && <div style={{ color: "#888" }}>Todo mundo abriu 🎉</div>}
         {naoAbriram.map((o) => (
-          <div key={o.cpf} style={{ padding: "8px 0", borderBottom: "1px solid #e8ecf0" }}>
+          <div key={o.cpf} style={{ padding: "8px 0", borderBottom: "1px solid #e1e8e5" }}>
             {o.nome}
           </div>
         ))}

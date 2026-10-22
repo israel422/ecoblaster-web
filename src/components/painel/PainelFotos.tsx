@@ -229,7 +229,7 @@ export default function PainelFotos({ cpfAdmin, onVoltar }: { cpfAdmin: string; 
   return (
     <div style={{ maxWidth: 1000, margin: "0 auto", padding: 24 }}>
       <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 16 }}>
-        <h1 style={{ color: "#1B4FA2", fontSize: 26 }}>Painel de Fotos</h1>
+        <h1 style={{ color: "#0f3b3c", fontSize: 26 }}>Painel de Fotos</h1>
         {onVoltar && (
           <button className="btn-voltar" style={{ padding: "10px 16px" }} onClick={onVoltar}>
             ← Menu
@@ -302,7 +302,7 @@ export default function PainelFotos({ cpfAdmin, onVoltar }: { cpfAdmin: string; 
       <div style={{ overflowX: "auto" }}>
         <table style={{ width: "100%", borderCollapse: "collapse" }}>
           <thead>
-            <tr style={{ textAlign: "left", borderBottom: "2px solid #e0e0e0" }}>
+            <tr style={{ textAlign: "left", borderBottom: "2px solid #dfe7e3" }}>
               <th style={{ padding: 8 }}>Data</th>
               <th style={{ padding: 8 }}>Obra</th>
               <th style={{ padding: 8 }}>Tipo</th>
@@ -368,7 +368,7 @@ export default function PainelFotos({ cpfAdmin, onVoltar }: { cpfAdmin: string; 
             onClick={(e) => e.stopPropagation()}
           >
             <div style={{ display: "flex", justifyContent: "space-between", alignItems: "start", gap: 12 }}>
-              <h3 style={{ color: "#1B4FA2" }}>
+              <h3 style={{ color: "#0f3b3c" }}>
                 Obra {registroAberto.obra} — {registroAberto.tipoCava} — {registroAberto.operador}
               </h3>
               <div style={{ display: "flex", gap: 8, flex: "0 0 auto" }}>
@@ -409,7 +409,7 @@ export default function PainelFotos({ cpfAdmin, onVoltar }: { cpfAdmin: string; 
                             borderTop: i === 0 ? "none" : "1px solid #eee",
                           }}
                         >
-                          <span style={{ fontWeight: 700, color: "#1B4FA2", fontSize: 14 }}>
+                          <span style={{ fontWeight: 700, color: "#0f3b3c", fontSize: 14 }}>
                             Cava {f.cava} — {registroAberto.tipoCava}
                           </span>
                           <button
@@ -607,7 +607,7 @@ export default function PainelFotos({ cpfAdmin, onVoltar }: { cpfAdmin: string; 
             style={{ background: "#fff", borderRadius: 16, padding: 24, maxWidth: 360, width: "100%" }}
             onClick={(e) => e.stopPropagation()}
           >
-            <h3 style={{ color: "#1B4FA2", marginBottom: 4 }}>Corrigir tipo da cava {cavaParaCorrigir.cava}</h3>
+            <h3 style={{ color: "#0f3b3c", marginBottom: 4 }}>Corrigir tipo da cava {cavaParaCorrigir.cava}</h3>
             <p style={{ color: "#666", fontSize: 13, marginBottom: 14 }}>
               Tipo atual: <strong>{cavaParaCorrigir.tipoAtual}</strong>
             </p>
