@@ -14,6 +14,8 @@ interface Props {
   obra: string;
   tipoCava: string;
   operador: string;
+  /** Coordenada da obra no Cronograma de Obras: usada só se o GPS e o EXIF falharem. */
+  coordObra?: { lat: number; lon: number } | null;
   fotos: FotoItem[];
   onFotosChange: (fotos: FotoItem[]) => void;
   erro: boolean;
@@ -25,6 +27,7 @@ export default function StepFotos({
   obra,
   tipoCava,
   operador,
+  coordObra,
   fotos,
   onFotosChange,
   erro,
@@ -38,6 +41,7 @@ export default function StepFotos({
   // GPS da foto que está na pré-visualização (vai junto pro registro ao confirmar).
   const previewGpsRef = useRef<{ lat: number; lon: number } | null>(null);
   const previewMotivoRef = useRef<string | undefined>(undefined);
+  const previewFonteRef = useRef<"exif" | "planilha" | undefined>(undefined);
   const [gps, setGps] = useState(statusGps);
   const [obtendoGps, setObtendoGps] = useState(false);
   useEffect(() => {
@@ -83,13 +87,27 @@ export default function StepFotos({
     // Foto da galeria: vale o GPS gravado pela câmera na própria foto (onde ela foi tirada).
     // Foto na hora: GPS do celular (a última posição boa, ou espera até 10 s por uma).
     setObtendoGps(true);
-    const exif = origemRef.current === "galeria" ? await gpsDoExif(file) : null;
-    const pos = exif ?? (await posicaoParaFoto(10_000)) ?? (await gpsDoExif(file));
+    // Último recurso: coordenada da obra no Cronograma de Obras — nenhuma foto fica sem coordenada.
+    let fonte: "exif" | "planilha" | undefined;
+    let pos: { lat: number; lon: number } | null = origemRef.current === "galeria" ? await gpsDoExif(file) : null;
+    if (pos) fonte = "exif";
+    if (!pos) pos = await posicaoParaFoto(10_000);
+    if (!pos && (pos = await gpsDoExif(file))) fonte = "exif";
+    const motivo = pos && fonte !== "exif" ? undefined : motivoSemGps();
+    if (!pos && coordObra) {
+      pos = coordObra;
+      fonte = "planilha";
+    }
     setObtendoGps(false);
     const gps = pos ? { lat: pos.lat, lon: pos.lon } : null;
     previewGpsRef.current = gps;
-    previewMotivoRef.current = gps ? undefined : motivoSemGps();
-    const gpsStr = gps ? `GPS: ${gps.lat.toFixed(5)}, ${gps.lon.toFixed(5)}` : "GPS: indisponível";
+    previewFonteRef.current = fonte;
+    previewMotivoRef.current = fonte === "planilha" || !gps ? motivo : undefined;
+    const gpsStr = !gps
+      ? "GPS: indisponível"
+      : fonte === "planilha"
+        ? `GPS (planilha da obra): ${gps.lat.toFixed(5)}, ${gps.lon.toFixed(5)}`
+        : `GPS: ${gps.lat.toFixed(5)}, ${gps.lon.toFixed(5)}`;
 
     const blob = await stampPhoto(file, {
       dataHoraStr: formatarDataHora(new Date()),
@@ -109,7 +127,7 @@ export default function StepFotos({
     const idx = fotoIndexRef.current;
     const gps = previewGpsRef.current;
     const novaLista = fotos.map((f, i) =>
-      i === idx ? { ...f, blob: previewBlob, lat: gps?.lat, lon: gps?.lon, gpsErro: gps ? undefined : previewMotivoRef.current } : f
+      i === idx ? { ...f, blob: previewBlob, lat: gps?.lat, lon: gps?.lon, gpsErro: previewMotivoRef.current, gpsFonte: previewFonteRef.current } : f
     );
     onFotosChange(novaLista);
     setPreviewBlob(null);
@@ -124,7 +142,7 @@ export default function StepFotos({
   function apagarFotoConfirmado() {
     const idx = idxParaApagar;
     if (idx === null) return;
-    const novaLista = fotos.map((f, i) => (i === idx ? { ...f, blob: undefined, lat: undefined, lon: undefined, gpsErro: undefined } : f));
+    const novaLista = fotos.map((f, i) => (i === idx ? { ...f, blob: undefined, lat: undefined, lon: undefined, gpsErro: undefined, gpsFonte: undefined } : f));
     onFotosChange(novaLista);
     setIdxParaApagar(null);
   }
@@ -137,7 +155,7 @@ export default function StepFotos({
       <div className="passo-sub">
         {qtdCavas} cava(s) neste turno · {feitas}/{fotos.length} fotos tiradas
       </div>
-      <AvisoGps status={gps.status} precisao={gps.posicao?.precisao} obtendo={obtendoGps} />
+      <AvisoGps status={gps.status} precisao={gps.posicao?.precisao} obtendo={obtendoGps} temPlanilha={Boolean(coordObra)} />
 
       <input
         ref={inputRef}
@@ -302,7 +320,7 @@ function PhotoThumb({ blob }: { blob: Blob }) {
 }
 
 // Faixa de localização na tela de fotos: diz se a coordenada vai sair na foto e como resolver
-function AvisoGps({ status, precisao, obtendo }: { status: string; precisao?: number; obtendo: boolean }) {
+function AvisoGps({ status, precisao, obtendo, temPlanilha }: { status: string; precisao?: number; obtendo: boolean; temPlanilha: boolean }) {
   const base = { borderRadius: 10, padding: "10px 12px", margin: "8px 0 4px", fontSize: 13, lineHeight: 1.4 } as const;
   if (obtendo) return <div style={{ ...base, background: "#eef4ff", color: "#1b4fa2" }}>📍 Obtendo localização para a foto…</div>;
   if (status === "ok")
@@ -327,7 +345,7 @@ function AvisoGps({ status, precisao, obtendo }: { status: string; precisao?: nu
           : "Sem sinal de GPS agora. Vá para um lugar com céu aberto e toque em “Tentar de novo”.";
   return (
     <div style={{ ...base, background: "#fdecea", color: "#a32020", border: "1px solid #f5c2c0" }}>
-      ⚠️ <b>A foto vai sair SEM coordenada.</b> {texto}
+      ⚠️ <b>{temPlanilha ? "Sem GPS: a foto vai usar a coordenada da obra no cronograma." : "A foto vai sair SEM coordenada."}</b> {texto}
       <div>
         <button
           type="button"

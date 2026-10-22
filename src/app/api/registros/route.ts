@@ -1,9 +1,11 @@
 import { NextResponse } from "next/server";
-import { and, desc, eq, gte, ilike, lte } from "drizzle-orm";
+import { and, desc, eq, gte, ilike, lte, sql } from "drizzle-orm";
 import { db } from "@/lib/db/client";
 import { registros } from "@/lib/db/schema";
 import { buscarOperador, isAdmin } from "@/lib/config/operadores";
 import { registroSchema } from "@/lib/validation";
+import { coordenadaDaObra, MOTIVO_GPS } from "@/lib/obras/coordenadaCronograma";
+import { enviarPushParaTodos } from "@/lib/push/enviarPush";
 
 export async function GET(req: Request) {
   const { searchParams } = new URL(req.url);
@@ -45,7 +47,27 @@ export async function POST(req: Request) {
     return NextResponse.json({ sucesso: false, erro: "CPF não autorizado" }, { status: 403 });
   }
 
+  // Em hipótese alguma foto sem coordenada: o que chegar sem GPS recebe a coordenada da obra no
+  // Cronograma de Obras (o celular já tenta isso; aqui é a segunda garantia, também para app antigo).
+  const fotos = parsed.data.fotos;
+  if (fotos.some((f) => f.lat == null || f.lon == null)) {
+    const c = await coordenadaDaObra(parsed.data.obra);
+    if (c) {
+      for (const f of fotos) {
+        if (f.lat == null || f.lon == null) Object.assign(f, { lat: c.lat, lon: c.lon, gpsFonte: "planilha", gpsErro: f.gpsErro ?? "sem_sinal" });
+      }
+    }
+  }
+  const usouPlanilha = fotos.filter((f) => f.gpsFonte === "planilha");
+  const semNada = fotos.filter((f) => f.lat == null || f.lon == null);
+
   try {
+    // avisa uma vez por turno (o turno tem um registro por cava)
+    const jaAvisado = parsed.data.turnoServerId && (usouPlanilha.length || semNada.length)
+      ? (await db.select({ id: registros.id }).from(registros)
+          .where(and(eq(registros.turnoId, parsed.data.turnoServerId), sql`${registros.fotos} @> '[{"gpsFonte":"planilha"}]'::jsonb`)).limit(1)).length > 0
+      : false;
+
     await db.insert(registros).values({
       data: parsed.data.data,
       obra: parsed.data.obra,
@@ -54,9 +76,18 @@ export async function POST(req: Request) {
       operador: operador.nome,
       cpf: operador.cpf,
       observacao: parsed.data.observacao,
-      fotos: parsed.data.fotos,
+      fotos,
       turnoId: parsed.data.turnoServerId,
     });
+
+    if (!jaAvisado && (usouPlanilha.length || semNada.length)) {
+      const motivo = MOTIVO_GPS[(usouPlanilha[0] ?? semNada[0])?.gpsErro ?? ""] ?? "GPS não respondeu";
+      await enviarPushParaTodos(
+        semNada.length
+          ? { titulo: "⚠️ Foto sem coordenada", corpo: `${operador.nome} · obra ${parsed.data.obra}: ${motivo}, e a obra não tem coordenada no Cronograma de Obras.`, url: "/painel" }
+          : { titulo: "📍 Coordenada da planilha", corpo: `${operador.nome} · obra ${parsed.data.obra}: ${motivo}. Usei a coordenada da obra no Cronograma de Obras.`, url: "/painel" }
+      ).catch((err) => console.error("Falha no aviso de GPS:", err));
+    }
 
     return NextResponse.json({ sucesso: true });
   } catch (err) {

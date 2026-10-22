@@ -54,6 +54,28 @@ export default function WizardShell({ sessao, turnoInicial, passoInicial, onAbri
       : { obra: "", data: hojeISO(), tipoCava: "", observacao: "" }
   );
   const [fotos, setFotos] = useState<FotoItem[]>(turnoInicial?.fotos ?? []);
+  // Plano B do GPS: coordenada da obra no Cronograma de Obras (guardada no aparelho para o campo sem internet)
+  const [coordObra, setCoordObra] = useState<{ lat: number; lon: number } | null>(null);
+  useEffect(() => {
+    const obra = dados.obra;
+    if (!obra) return;
+    const chave = `ecoblaster.coordObra.${obra}`;
+    try {
+      const salva = localStorage.getItem(chave);
+      if (salva) setCoordObra(JSON.parse(salva));
+    } catch {}
+    fetch(`/api/obras/coordenada?obra=${encodeURIComponent(obra)}&cpf=${sessao.cpf}`)
+      .then((r) => (r.ok ? r.json() : null))
+      .then((c) => {
+        if (c?.lat != null) {
+          setCoordObra(c);
+          try {
+            localStorage.setItem(chave, JSON.stringify(c));
+          } catch {}
+        }
+      })
+      .catch(() => {});
+  }, [dados.obra, sessao.cpf]);
   const [enviando, setEnviando] = useState(false);
   const [erroEnvio, setErroEnvio] = useState<string | null>(null);
   const [progresso, setProgresso] = useState<{ feitas: number; total: number } | null>(null);
@@ -322,6 +344,7 @@ export default function WizardShell({ sessao, turnoInicial, passoInicial, onAbri
           obra={dados.obra}
           tipoCava={dados.tipoCava}
           operador={sessao.nome}
+          coordObra={coordObra}
           fotos={fotos}
           onFotosChange={atualizarFotos}
           erro={erroFotos}

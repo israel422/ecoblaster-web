@@ -26,6 +26,9 @@ export interface FotoItem {
   lon?: number;
   /** Quando a foto ficou sem coordenada: permissao_negada, gps_desligado, sem_sinal, sem_suporte. */
   gpsErro?: string;
+  /** De onde veio a coordenada quando não foi o GPS do celular: "exif" (gravada na foto) ou
+   *  "planilha" (coordenada da obra no Cronograma de Obras — plano B). */
+  gpsFonte?: "exif" | "planilha";
 }
 
 export interface DadosRegistro {
