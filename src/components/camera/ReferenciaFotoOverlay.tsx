@@ -6,7 +6,8 @@ import type { ReferenciaFoto } from "@/lib/config/referenciasFoto";
 interface Props {
   referencia: ReferenciaFoto;
   onProsseguir: () => void;
-  onEscolherGaleria: () => void;
+  /** Sem isso o botão da galeria não aparece (só quem tem permissão pode usar a galeria). */
+  onEscolherGaleria?: () => void;
 }
 
 const SEGUNDOS_INICIAIS = 2;
@@ -40,7 +41,7 @@ export default function ReferenciaFotoOverlay({ referencia, onProsseguir, onEsco
         >
           {segundos > 0 ? `Aguarde ${segundos}s...` : "📷 Tirar Foto"}
         </button>
-        <button
+        {onEscolherGaleria && <button
           type="button"
           onClick={onEscolherGaleria}
           style={{
@@ -56,7 +57,7 @@ export default function ReferenciaFotoOverlay({ referencia, onProsseguir, onEsco
           }}
         >
           🖼️ Escolher da galeria
-        </button>
+        </button>}
       </div>
     </div>
   );

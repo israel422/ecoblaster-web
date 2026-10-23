@@ -17,6 +17,7 @@ import StepFotos from "./StepFotos";
 import { iniciarGps } from "@/lib/camera/gps";
 import StepDecisaoCava from "./StepDecisaoCava";
 import StepObservacao from "./StepObservacao";
+import { podeUsarGaleria } from "@/lib/config/operadores";
 
 const TOTAL_PASSOS = 7;
 
@@ -355,6 +356,7 @@ export default function WizardShell({ sessao, turnoInicial, passoInicial, onAbri
           tipoCava={dados.tipoCava}
           operador={sessao.nome}
           coordObra={coordObra}
+          podeGaleria={podeUsarGaleria(sessao.cpf)}
           fotos={fotos}
           onFotosChange={atualizarFotos}
           erro={erroFotos}

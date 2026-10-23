@@ -48,3 +48,11 @@ export function buscarOperador(cpf: string): Operador | undefined {
 export function isAdmin(cpf: string): boolean {
   return buscarOperador(cpf)?.admin ?? false;
 }
+
+// Só estes podem anexar foto da galeria; os demais têm que fotografar na hora, na obra.
+// (Israel, Cleitisval e Aurelio)
+const PODEM_USAR_GALERIA = ["70239725441", "10696389436", "13580414402"];
+
+export function podeUsarGaleria(cpf: string): boolean {
+  return PODEM_USAR_GALERIA.includes(cpf);
+}

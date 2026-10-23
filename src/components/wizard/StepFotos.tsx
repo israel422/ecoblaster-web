@@ -16,6 +16,8 @@ interface Props {
   operador: string;
   /** Coordenada da obra no Cronograma de Obras: usada só se o GPS e o EXIF falharem. */
   coordObra?: { lat: number; lon: number } | null;
+  /** Só quem tem permissão pode anexar foto da galeria; os demais fotografam na hora. */
+  podeGaleria: boolean;
   fotos: FotoItem[];
   onFotosChange: (fotos: FotoItem[]) => void;
   erro: boolean;
@@ -28,6 +30,7 @@ export default function StepFotos({
   tipoCava,
   operador,
   coordObra,
+  podeGaleria,
   fotos,
   onFotosChange,
   erro,
@@ -42,6 +45,7 @@ export default function StepFotos({
   const previewGpsRef = useRef<{ lat: number; lon: number } | null>(null);
   const previewMotivoRef = useRef<string | undefined>(undefined);
   const previewFonteRef = useRef<"exif" | "planilha" | undefined>(undefined);
+  const previewOrigemRef = useRef<"camera" | "galeria">("camera");
   const [gps, setGps] = useState(statusGps);
   const [obtendoGps, setObtendoGps] = useState(false);
   useEffect(() => {
@@ -71,6 +75,7 @@ export default function StepFotos({
   }
 
   function escolherDaGaleria(idx: number) {
+    if (!podeGaleria) return tirarFoto(idx);
     fotoIndexRef.current = idx;
     origemRef.current = "galeria";
     inputGaleriaRef.current?.click();
@@ -84,16 +89,18 @@ export default function StepFotos({
     const item = fotos[idx];
     if (!item) return;
 
-    // Foto da galeria: vale o GPS gravado pela câmera na própria foto (onde ela foi tirada).
+    // Foto da galeria: vale o GPS gravado pela câmera na própria foto (onde ela foi tirada) — nunca a
+    // posição atual do celular, que é onde a pessoa está agora e não onde a cava está.
     // Foto na hora: GPS do celular (a última posição boa, ou espera até 10 s por uma).
     setObtendoGps(true);
     // Último recurso: coordenada da obra no Cronograma de Obras — nenhuma foto fica sem coordenada.
+    const daGaleria = origemRef.current === "galeria";
     let fonte: "exif" | "planilha" | undefined;
-    let pos: { lat: number; lon: number } | null = origemRef.current === "galeria" ? await gpsDoExif(file) : null;
+    let pos: { lat: number; lon: number } | null = daGaleria ? await gpsDoExif(file) : null;
     if (pos) fonte = "exif";
-    if (!pos) pos = await posicaoParaFoto(10_000);
-    if (!pos && (pos = await gpsDoExif(file))) fonte = "exif";
-    const motivo = pos && fonte !== "exif" ? undefined : origemRef.current === "galeria" && fonte === "exif" ? "foto_da_galeria" : motivoSemGps();
+    if (!pos && !daGaleria) pos = await posicaoParaFoto(10_000);
+    if (!pos && !daGaleria && (pos = await gpsDoExif(file))) fonte = "exif";
+    const motivo = daGaleria ? "foto_da_galeria" : pos && fonte !== "exif" ? undefined : motivoSemGps();
     if (!pos && coordObra) {
       pos = coordObra;
       fonte = "planilha";
@@ -102,7 +109,8 @@ export default function StepFotos({
     const gps = pos ? { lat: pos.lat, lon: pos.lon } : null;
     previewGpsRef.current = gps;
     previewFonteRef.current = fonte;
-    previewMotivoRef.current = fonte === "planilha" || !gps ? motivo : undefined;
+    previewMotivoRef.current = daGaleria || fonte === "planilha" || !gps ? motivo : undefined;
+    previewOrigemRef.current = origemRef.current;
     // O carimbo não diz de onde veio a coordenada; a origem fica registrada (gpsFonte) e o
     // problema aparece para os administradores em "Avisos de GPS".
     const gpsStr = gps ? `GPS: ${gps.lat.toFixed(5)}, ${gps.lon.toFixed(5)}` : "GPS: indisponível";
@@ -126,7 +134,7 @@ export default function StepFotos({
     const idx = fotoIndexRef.current;
     const gps = previewGpsRef.current;
     const novaLista = fotos.map((f, i) =>
-      i === idx ? { ...f, blob: previewBlob, lat: gps?.lat, lon: gps?.lon, gpsErro: previewMotivoRef.current, gpsFonte: previewFonteRef.current } : f
+      i === idx ? { ...f, blob: previewBlob, lat: gps?.lat, lon: gps?.lon, gpsErro: previewMotivoRef.current, gpsFonte: previewFonteRef.current, origem: previewOrigemRef.current } : f
     );
     onFotosChange(novaLista);
     setPreviewBlob(null);
@@ -141,7 +149,7 @@ export default function StepFotos({
   function apagarFotoConfirmado() {
     const idx = idxParaApagar;
     if (idx === null) return;
-    const novaLista = fotos.map((f, i) => (i === idx ? { ...f, blob: undefined, lat: undefined, lon: undefined, gpsErro: undefined, gpsFonte: undefined } : f));
+    const novaLista = fotos.map((f, i) => (i === idx ? { ...f, blob: undefined, lat: undefined, lon: undefined, gpsErro: undefined, gpsFonte: undefined, origem: undefined } : f));
     onFotosChange(novaLista);
     setIdxParaApagar(null);
   }
@@ -255,7 +263,7 @@ export default function StepFotos({
                     </select>
                   )}
                 </div>
-                {!item.blob && (
+                {!item.blob && podeGaleria && (
                   <button
                     type="button"
                     className="foto-del"
@@ -319,11 +327,15 @@ export default function StepFotos({
             setReferenciaParaIdx(null);
             tirarFoto(idx);
           }}
-          onEscolherGaleria={() => {
-            const idx = referenciaParaIdx;
-            setReferenciaParaIdx(null);
-            escolherDaGaleria(idx);
-          }}
+          onEscolherGaleria={
+            podeGaleria
+              ? () => {
+                  const idx = referenciaParaIdx;
+                  setReferenciaParaIdx(null);
+                  escolherDaGaleria(idx);
+                }
+              : undefined
+          }
         />
       )}
     </>

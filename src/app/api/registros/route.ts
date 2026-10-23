@@ -2,7 +2,7 @@ import { NextResponse } from "next/server";
 import { and, desc, eq, gte, ilike, lte, sql } from "drizzle-orm";
 import { db } from "@/lib/db/client";
 import { registros } from "@/lib/db/schema";
-import { buscarOperador, isAdmin } from "@/lib/config/operadores";
+import { buscarOperador, isAdmin, podeUsarGaleria } from "@/lib/config/operadores";
 import { registroSchema } from "@/lib/validation";
 import { coordenadaDaObra, distanciaKm, LIMITE_LONGE_KM, MOTIVO_GPS, ORIGEM_GPS } from "@/lib/obras/coordenadaCronograma";
 import { enviarPushParaTodos } from "@/lib/push/enviarPush";
@@ -45,6 +45,11 @@ export async function POST(req: Request) {
   const operador = buscarOperador(parsed.data.cpf);
   if (!operador) {
     return NextResponse.json({ sucesso: false, erro: "CPF não autorizado" }, { status: 403 });
+  }
+
+  // Foto da galeria só para quem tem permissão: os operadores têm que fotografar na hora, na obra
+  if (!podeUsarGaleria(operador.cpf) && parsed.data.fotos.some((f) => f.origem === "galeria")) {
+    return NextResponse.json({ sucesso: false, erro: "Foto da galeria não é permitida: tire a foto na hora, na obra." }, { status: 403 });
   }
 
   // Em hipótese alguma foto sem coordenada: o que chegar sem GPS recebe a coordenada da obra no

@@ -53,6 +53,7 @@ export async function registrarCava(
           ...(f.gpsErro ? { gpsErro: f.gpsErro } : {}),
           ...(f.gpsFonte ? { gpsFonte: f.gpsFonte } : {}),
           ...(f.ponto ? { ponto: f.ponto } : {}),
+          ...(f.origem ? { origem: f.origem } : {}),
         })),
         turnoServerId: dados.turnoServerId,
       }),

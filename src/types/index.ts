@@ -29,6 +29,8 @@ export interface FotoItem {
   /** De onde veio a coordenada quando não foi o GPS do celular: "exif" (gravada na foto) ou
    *  "planilha" (coordenada da obra no Cronograma de Obras — plano B). */
   gpsFonte?: "exif" | "planilha";
+  /** "camera" = tirada na hora pelo app; "galeria" = escolhida da galeria (só quem tem permissão) */
+  origem?: "camera" | "galeria";
   /** Ponto do projeto onde a cava está (P1 a P200), escolhido pelo operador antes da foto. */
   ponto?: string;
 }
