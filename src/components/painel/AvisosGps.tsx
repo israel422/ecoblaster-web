@@ -1,6 +1,10 @@
 "use client";
 
 import { useEffect, useState } from "react";
+import { corrigirGpsDoCarimbo } from "@/lib/camera/corrigirCarimbo";
+import { enviarFotoComTimeout } from "@/lib/sync/enviarFotoComTimeout";
+
+type FotoCarimbo = { id: number; idx: number; url: string; antigo: { lat: number; lon: number }; novo: { lat: number; lon: number } };
 
 interface Aviso {
   data: string;
@@ -31,17 +35,40 @@ export default function AvisosGps({ cpfAdmin, onVoltar }: Props) {
   const [carregando, setCarregando] = useState(false);
   const [avisos, setAvisos] = useState<Aviso[]>([]);
   const [corrigindo, setCorrigindo] = useState<string | null>(null);
+  const [progresso, setProgresso] = useState("");
 
   async function usarCronograma(a: Aviso, chave: string) {
     if (!confirm(`Trocar a coordenada das ${a.fotosLonge} foto(s) da obra ${a.obra} (${a.operador}, ${dataBR(a.data)}) pela coordenada da obra no Cronograma?
 
-A coordenada original fica guardada. O carimbo da foto não muda.`)) return;
+A linha do GPS no carimbo das fotos também é reescrita. A coordenada e a foto originais ficam guardadas.`)) return;
     setCorrigindo(chave);
-    await fetch("/api/avisos-gps/corrigir", {
+    setProgresso("Trocando a coordenada...");
+    const resp = await fetch("/api/avisos-gps/corrigir", {
       method: "POST",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({ cpf: cpfAdmin, ids: a.registroIds ?? [] }),
     });
+    const { fotos = [] } = resp.ok ? ((await resp.json()) as { fotos?: FotoCarimbo[] }) : {};
+    // Reescreve a linha do GPS no carimbo de cada foto (uma por vez: várias fotos são do mesmo registro)
+    let falhas = 0;
+    for (const [n, f] of fotos.entries()) {
+      setProgresso(`Corrigindo o carimbo: foto ${n + 1} de ${fotos.length}...`);
+      try {
+        const original = await (await fetch(f.url)).blob();
+        const nova = await corrigirGpsDoCarimbo(original, f.antigo, f.novo);
+        const { url } = await enviarFotoComTimeout(`carimbo-${f.id}-${f.idx}.jpg`, nova);
+        const r = await fetch("/api/avisos-gps/carimbo", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ cpf: cpfAdmin, id: f.id, idx: f.idx, url }),
+        });
+        if (!r.ok) falhas++;
+      } catch {
+        falhas++;
+      }
+    }
+    if (falhas) alert(`${falhas} foto(s) ficaram com o carimbo antigo (a coordenada já foi corrigida). Verifique a internet.`);
+    setProgresso("");
     setCorrigindo(null);
     await buscar(dias);
   }
@@ -122,13 +149,13 @@ A coordenada original fica guardada. O carimbo da foto não muda.`)) return;
               <button type="button" className="btn-avancar" style={{ padding: "7px 14px", fontSize: 13 }}
                 disabled={corrigindo === `${a.data}|${a.obra}|${a.operador}`}
                 onClick={() => usarCronograma(a, `${a.data}|${a.obra}|${a.operador}`)}>
-                {corrigindo === `${a.data}|${a.obra}|${a.operador}` ? "Corrigindo..." : "Usar coordenada do cronograma"}
+                {corrigindo === `${a.data}|${a.obra}|${a.operador}` ? progresso || "Corrigindo..." : "Usar coordenada do cronograma"}
               </button>
             </div>
           )}
           {(a.fotosCorrigidas ?? 0) > 0 && (
             <div style={{ fontSize: 12, color: "#1e7b45", marginTop: 4 }}>
-              ✅ {a.fotosCorrigidas} foto(s) corrigida(s) para a coordenada do Cronograma (a original ficou guardada).
+              ✅ {a.fotosCorrigidas} foto(s) corrigida(s) para a coordenada do Cronograma, com o carimbo reescrito (a original ficou guardada).
             </div>
           )}
           {a.fotosPlanilha + a.fotosSemNada > 0 && (<>
