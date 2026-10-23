@@ -2,6 +2,7 @@ import webpush from "web-push";
 import { eq } from "drizzle-orm";
 import { db } from "@/lib/db/client";
 import { pushSubscriptions } from "@/lib/db/schema";
+import { isAdmin } from "@/lib/config/operadores";
 
 let configurado = false;
 
@@ -21,11 +22,21 @@ export interface PushPayload {
   url?: string;
 }
 
-// Manda a notificação pra todo mundo inscrito. Inscrição expirada/revogada
-// (404/410) é removida do banco — o resto dos envios não é afetado por isso.
+// Avisos do escritório (GPS, foto longe da obra...): só para os administradores inscritos.
+// Os operadores também podem se inscrever (para o aviso de turno aberto) e não recebem estes.
 export async function enviarPushParaTodos(payload: PushPayload): Promise<{ enviados: number; removidos: number }> {
+  const inscricoes = (await db.select().from(pushSubscriptions)).filter((i) => isAdmin(i.cpf));
+  return enviar(inscricoes, payload);
+}
+
+// Notificação para um operador só (todos os aparelhos em que ele ativou as notificações).
+export async function enviarPushParaCpf(cpf: string, payload: PushPayload): Promise<{ enviados: number; removidos: number }> {
+  return enviar(await db.select().from(pushSubscriptions).where(eq(pushSubscriptions.cpf, cpf)), payload);
+}
+
+// Inscrição expirada/revogada (404/410) é removida do banco — o resto dos envios não é afetado por isso.
+async function enviar(inscricoes: (typeof pushSubscriptions.$inferSelect)[], payload: PushPayload) {
   configurar();
-  const inscricoes = await db.select().from(pushSubscriptions);
 
   let enviados = 0;
   let removidos = 0;

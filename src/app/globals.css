@@ -901,3 +901,11 @@ table th { background: #e9f4ee; color: #0f3b3c; }
 .gps-perm-btn { width: 100%; margin-top: 4px; }
 .gps-perm-erro { color: #a32020; font-weight: 700; }
 .gps-perm-depois { display: block; width: 100%; margin-top: 10px; padding: 8px; border: none; background: none; color: #5d6f6c; font-size: 13px; text-decoration: underline; cursor: pointer; }
+
+/* ===== Turno de dia anterior aberto (operador) ===== */
+.turno-atrasado-aviso { background: #fdecea; border: 1px solid #f5c2c0; color: #8a1c1c; border-radius: 12px; padding: 10px 12px; margin: 8px 0 12px; font-size: 14px; line-height: 1.45; }
+.turno-item.turno-atrasado { border-color: #f5c2c0 !important; background: #fffafa !important; }
+.turno-atrasado-tag { display: inline-block; margin: 2px 0 4px; padding: 2px 8px; border-radius: 999px; background: #fdecea; color: #a32020; font-size: 12px; font-weight: 700; }
+.turno-notif { display: flex; flex-wrap: wrap; align-items: center; gap: 8px; background: #fff7e0; border: 1px solid #f3dca0; color: #6b4a00; border-radius: 12px; padding: 8px 12px; margin-bottom: 12px; font-size: 13px; }
+.turno-notif button { padding: 6px 12px; border-radius: 999px; border: 1.5px solid #3aa751; background: #fff; color: #1f7a4a; font-weight: 700; font-size: 13px; cursor: pointer; }
+.turno-notif small { flex-basis: 100%; color: #a32020; }

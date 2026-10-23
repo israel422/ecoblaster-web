@@ -6,6 +6,7 @@ import { turnoCompleto, fotosFeitas, apagarTurno, type TurnoRegistro } from "@/l
 import { encerrarTurnoNoServidor } from "@/lib/sync/turnosServidor";
 import { sincronizarTurno } from "@/lib/sync/sincronizarTurno";
 import ConfirmModal from "@/components/ui/ConfirmModal";
+import { ativarNotificacoes, notificacoesJaAtivas } from "@/lib/push/subscribePush";
 import type { SessaoOperador } from "@/types";
 
 interface Props {
@@ -30,6 +31,26 @@ export default function TurnosAbertosModal({
   const [progressoPorChave, setProgressoPorChave] = useState<Record<string, { feitas: number; total: number }>>({});
   const [erroPorChave, setErroPorChave] = useState<Record<string, string>>({});
   const [itemParaDescartar, setItemParaDescartar] = useState<TurnoExibicao | null>(null);
+  const [notifAtivas, setNotifAtivas] = useState(true);
+  const [msgNotif, setMsgNotif] = useState<string | null>(null);
+
+  useEffect(() => {
+    if (!sessao.admin) notificacoesJaAtivas().then(setNotifAtivas).catch(() => setNotifAtivas(false));
+  }, [sessao.admin]);
+
+  async function ativarNotif() {
+    const r = await ativarNotificacoes(sessao.cpf);
+    if (r === "inscrito") {
+      setNotifAtivas(true);
+      setMsgNotif(null);
+    } else {
+      setMsgNotif(
+        r === "negado"
+          ? "Notificação bloqueada no celular: libere nas configurações do Chrome (Notificações → Permitir)."
+          : "Este celular não aceitou as notificações agora. Tente de novo."
+      );
+    }
+  }
 
   const atualizar = useCallback(async () => {
     const lista = await obterTurnosParaExibir(sessao.cpf);
@@ -43,6 +64,11 @@ export default function TurnosAbertosModal({
   }, [sessao.cpf]);
 
   if (!turnos || turnos.length === 0) return null;
+
+  // turno de dia anterior ainda aberto (do próprio operador): precisa fechar antes de iniciar o de hoje
+  const hoje = hojeLocal();
+  const dataDe = (t: TurnoExibicao) => t.local?.data ?? t.remoto?.data ?? "";
+  const atrasados = sessao.admin ? [] : turnos.filter((t) => dataDe(t) && dataDe(t) < hoje);
 
   async function sincronizar(item: TurnoExibicao) {
     if (!item.local) return;
@@ -79,13 +105,34 @@ export default function TurnosAbertosModal({
         <div className="turnos-titulo">Turnos em Aberto</div>
         <div className="turnos-sub">Registros ainda não sincronizados neste aparelho</div>
 
+        {atrasados.length > 0 && (
+          <div className="turno-atrasado-aviso">
+            ⚠️ <b>Você está com turno de dia anterior aberto</b> (
+            {atrasados.map((t) => `obra ${t.local?.obra ?? t.remoto?.obra} de ${dataBR(dataDe(t))}`).join(", ")}). Termine as fotos e toque em{" "}
+            <b>Sincronizar</b> para fechar o turno antes de iniciar o de hoje.
+            {atrasados.some((t) => t.remoto) && " O turno com 🔒 foi aberto em outro celular: feche nele ou fale com o escritório."}
+          </div>
+        )}
+        {!sessao.admin && !notifAtivas && (
+          <div className="turno-notif">
+            🔔 Ative as notificações para ser avisado quando ficar turno aberto.
+            <button type="button" onClick={ativarNotif}>
+              Ativar notificações
+            </button>
+            {msgNotif && <small>{msgNotif}</small>}
+          </div>
+        )}
+
         {turnos.map((item) => {
           if (item.remoto) {
             return (
-              <div key={item.chave} className="turno-item">
+              <div key={item.chave} className={`turno-item${atrasados.includes(item) ? " turno-atrasado" : ""}`}>
                 <div className="turno-obra">
                   {sessao.admin ? `${item.remoto.operador} · ` : ""}Obra {item.remoto.obra} · {item.remoto.data}
                 </div>
+                {atrasados.includes(item) && (
+                  <div className="turno-atrasado-tag">Turno de {dataBR(item.remoto.data)} — feche antes de iniciar o de hoje</div>
+                )}
                 <div className="turno-status">🔒 Turno iniciado em outro aparelho</div>
                 {sessao.admin && (
                   <div className="turno-botoes">
@@ -107,10 +154,13 @@ export default function TurnosAbertosModal({
           const estaEnviando = sincronizando === item.chave;
 
           return (
-            <div key={item.chave} className="turno-item">
+            <div key={item.chave} className={`turno-item${atrasados.includes(item) ? " turno-atrasado" : ""}`}>
               <div className="turno-obra">
                 {sessao.admin ? `${local.operador} · ` : ""}Obra {local.obra} · {local.data}
               </div>
+              {atrasados.includes(item) && (
+                <div className="turno-atrasado-tag">Turno de {dataBR(local.data)} — feche antes de iniciar o de hoje</div>
+              )}
               <div className="turno-status">
                 {estaEnviando && progresso
                   ? `Enviando ${progresso.feitas}/${progresso.total}...`
@@ -194,3 +244,10 @@ export default function TurnosAbertosModal({
     </div>
   );
 }
+
+// data de hoje no fuso de Brasília/Recife (o celular pode estar com outro fuso)
+function hojeLocal(): string {
+  return new Intl.DateTimeFormat("en-CA", { timeZone: "America/Sao_Paulo" }).format(new Date());
+}
+
+const dataBR = (iso: string) => iso.split("-").reverse().join("/");
