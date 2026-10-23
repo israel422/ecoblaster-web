@@ -154,14 +154,11 @@ export default function StepFotos({
     setIdxParaApagar(null);
   }
 
-  // Ponto escolhido para uma foto; as fotos seguintes da mesma cava herdam o mesmo ponto
+  // O ponto é da cava: escolhido em qualquer foto, vale para todas as fotos daquela cava que ainda não foram
+  // tiradas (as já tiradas ficam com o ponto que saiu no carimbo). Cada cava tem o seu ponto.
   function escolherPonto(idx: number, ponto: string) {
     const cava = fotos[idx].cava;
-    onFotosChange(
-      fotos.map((f, i) =>
-        i === idx || (i > idx && f.cava === cava && !f.blob && !f.ponto) ? { ...f, ponto: ponto || undefined } : f
-      )
-    );
+    onFotosChange(fotos.map((f, i) => (i === idx || (f.cava === cava && !f.blob) ? { ...f, ponto: ponto || undefined } : f)));
   }
 
   let cavaAtual = 0;
