@@ -8,6 +8,7 @@ import OfflineBanner from "@/components/OfflineBanner";
 import AlertModal from "@/components/ui/AlertModal";
 import AdminMenu from "@/components/AdminMenu";
 import EcoTopo from "@/components/EcoTopo";
+import GpsPermissaoAviso from "@/components/GpsPermissaoAviso";
 import PainelFotos from "@/components/painel/PainelFotos";
 import PainelIndicadores from "@/components/painel/PainelIndicadores";
 import GerenciarObras from "@/components/painel/GerenciarObras";
@@ -81,6 +82,8 @@ export default function Home() {
     <>
       <OfflineBanner />
       {!sessao && <LoginScreen onLogin={handleLogin} />}
+      {/* operador sem localização liberada: pede a liberação (volta toda vez que abrir o app) */}
+      {sessao && !sessao.admin && <GpsPermissaoAviso />}
       {sessao && (
         <EcoTopo
           nome={sessao.nome}
