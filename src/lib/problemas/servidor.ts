@@ -145,11 +145,12 @@ export async function listarProblemas(): Promise<Problema[]> {
     const jaExplicado = out.some((p) => p.quem === a.operador && p.gravidade === "alta");
     out.push({
       id: `a${cpf}`, origem: "servidor", gravidade: jaExplicado ? "baixa" : "media", quem: String(a.operador), quando: hora(new Date(String(a.ultimo))), vezes: Number(a.n),
-      titulo: `Entrou ${a.n} vezes hoje e não conseguiu abrir turno`,
+      titulo: `Entrou ${a.n} vezes hoje e não abriu turno`,
       detalhe: `Primeira entrada ${hora(new Date(String(a.primeiro)))}, última ${hora(new Date(String(a.ultimo)))}. Nenhum turno aberto nem foto enviada hoje.`,
       solucao: jaExplicado
         ? "A causa provável está no problema acima, do mesmo operador."
-        : "Pedir um print da tela que aparece depois do CPF. Causas comuns: turno pendente no celular, localização bloqueada ou falta de obra no cronograma.",
+        : "Pode estar travado ou só ter aberto o app para olhar (máquina parada, esperando obra). Ligar e perguntar; se estiver travado, " +
+          "pedir um print da tela que aparece depois do CPF. Causas comuns: turno pendente no celular, localização bloqueada ou obra fora do cronograma.",
       acoes: [],
     });
   }
