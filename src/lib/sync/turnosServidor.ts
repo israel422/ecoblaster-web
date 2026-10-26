@@ -52,3 +52,17 @@ export async function listarTodosTurnosServidor(cpfAdmin: string): Promise<Turno
     return [];
   }
 }
+
+// Turnos guardados no celular que o administrador descartou pelo painel (só responde se o servidor respondeu:
+// sem internet não apaga nada)
+export async function turnosDescartados(serverIds: string[]): Promise<Set<string>> {
+  if (!serverIds.length) return new Set();
+  try {
+    const resp = await fetch(`/api/turnos-abertos/status?ids=${serverIds.map(encodeURIComponent).join(",")}`, { cache: "no-store" });
+    if (!resp.ok) return new Set();
+    const lista = (await resp.json()) as { id: string; descartado: boolean }[];
+    return new Set(lista.filter((t) => t.descartado).map((t) => t.id));
+  } catch {
+    return new Set();
+  }
+}

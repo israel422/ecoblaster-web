@@ -1,5 +1,5 @@
-import { listarTurnosPorCpf, listarTodosTurnos, type TurnoRegistro } from "@/lib/idb/turnosDb";
-import { listarTurnosServidor, listarTodosTurnosServidor, type TurnoAbertoServidor } from "@/lib/sync/turnosServidor";
+import { apagarTurno, listarTurnosPorCpf, listarTodosTurnos, type TurnoRegistro } from "@/lib/idb/turnosDb";
+import { listarTurnosServidor, listarTodosTurnosServidor, turnosDescartados, type TurnoAbertoServidor } from "@/lib/sync/turnosServidor";
 import { isAdmin } from "@/lib/config/operadores";
 
 export interface TurnoExibicao {
@@ -13,10 +13,14 @@ export interface TurnoExibicao {
 // como "remoto" (iniciados em outro aparelho, só dá pra descartar, não editar).
 export async function obterTurnosParaExibir(cpf: string): Promise<TurnoExibicao[]> {
   const admin = isAdmin(cpf);
-  const [locais, remotos] = await Promise.all([
+  const [todosLocais, remotos] = await Promise.all([
     admin ? listarTodosTurnos() : listarTurnosPorCpf(cpf),
     admin ? listarTodosTurnosServidor(cpf) : listarTurnosServidor(cpf),
   ]);
+  // turno que o administrador descartou pelo painel: apaga a cópia deste celular e libera o operador
+  const descartados = await turnosDescartados(todosLocais.map((l) => l.serverId).filter((x): x is string => !!x));
+  for (const l of todosLocais) if (l.serverId && descartados.has(l.serverId) && l.id) await apagarTurno(l.id);
+  const locais = todosLocais.filter((l) => !(l.serverId && descartados.has(l.serverId)));
 
   const resultado: TurnoExibicao[] = locais.map((l) => ({
     chave: `local-${l.id}`,
