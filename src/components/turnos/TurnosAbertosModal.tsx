@@ -8,6 +8,7 @@ import { sincronizarTurno } from "@/lib/sync/sincronizarTurno";
 import ConfirmModal from "@/components/ui/ConfirmModal";
 import { ativarNotificacoes, notificacoesJaAtivas } from "@/lib/push/subscribePush";
 import type { SessaoOperador } from "@/types";
+import { reportarProblema } from "@/lib/problemas/reportar";
 
 interface Props {
   sessao: SessaoOperador;
@@ -82,6 +83,7 @@ export default function TurnosAbertosModal({
       await atualizar();
     } else {
       setErroPorChave((p) => ({ ...p, [item.chave]: resultado.erro || "Erro ao sincronizar" }));
+      reportarProblema(sessao.cpf, "erro_sincronizar", item.local.obra, { obra: item.local.obra, data: item.local.data, erro: resultado.erro || "Erro ao sincronizar" });
     }
     setSincronizando(null);
   }

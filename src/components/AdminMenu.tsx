@@ -12,6 +12,7 @@ interface Props {
   onGerenciarObras: () => void;
   onRelatorioTurnos: () => void;
   onAvisosGps: () => void;
+  onProblemas: () => void;
 }
 
 // Ícones de traço (mesmo estilo do Mapa de Rocha)
@@ -22,6 +23,7 @@ const ICONES: Record<string, React.ReactNode> = {
   obras: <><path d="M3 21h18" /><path d="M5 21V10l7-5 7 5v11" /><path d="M10 21v-6h4v6" /></>,
   turnos: <><rect x="4" y="3.5" width="16" height="18" rx="2.5" /><path d="M9 3.5V2h6v1.5" /><path d="M8.5 11l2 2 4-4M8.5 17h7" /></>,
   gps: <><path d="M12 22s7-6.2 7-12a7 7 0 1 0-14 0c0 5.8 7 12 7 12z" /><circle cx="12" cy="10" r="2.6" /></>,
+  alerta: <><path d="M12 3 2.5 20h19z" /><path d="M12 10v4.5M12 17.3v.2" /></>,
   sino: <><path d="M6 16V11a6 6 0 1 1 12 0v5l1.5 2h-15z" /><path d="M10 20.5a2 2 0 0 0 4 0" /></>,
 };
 const Icone = ({ nome }: { nome: string }) => (
@@ -37,7 +39,17 @@ export default function AdminMenu({
   onGerenciarObras,
   onRelatorioTurnos,
   onAvisosGps,
+  onProblemas,
 }: Props) {
+  // quantos problemas abertos na Central (atualiza a cada 30 s)
+  const [nProblemas, setNProblemas] = useState(0);
+  useEffect(() => {
+    let vivo = true;
+    const buscar = () => fetch(`/api/problemas?cpf=${encodeURIComponent(cpf)}`).then((r) => (r.ok ? r.json() : [])).then((l) => vivo && setNProblemas(Array.isArray(l) ? l.length : 0)).catch(() => {});
+    buscar();
+    const t = setInterval(buscar, 30_000);
+    return () => { vivo = false; clearInterval(t); };
+  }, [cpf]);
   const [ativas, setAtivas] = useState(false);
   const [mensagem, setMensagem] = useState<string | null>(null);
 
@@ -94,6 +106,15 @@ export default function AdminMenu({
             <small>Registrar a cava e as fotos do turno</small>
           </span>
           <svg className="eco-seta" viewBox="0 0 24 24" aria-hidden="true"><path d="M5 12h14M13 6l6 6-6 6" /></svg>
+        </button>
+
+        <button type="button" className={`eco-problemas ${nProblemas ? "tem" : ""}`} onClick={onProblemas}>
+          <span className="eco-ico"><Icone nome="alerta" /></span>
+          <span>
+            <b>Central de Problemas</b>
+            <small>{nProblemas ? `${nProblemas} problema(s) aberto(s) agora, com a solução` : "Nenhum problema aberto agora"}</small>
+          </span>
+          {nProblemas > 0 && <em className="eco-badge">{nProblemas}</em>}
         </button>
 
         <div className="eco-grade">

@@ -3,6 +3,7 @@
 import { useState } from "react";
 import { buscarOperador } from "@/lib/config/operadores";
 import type { SessaoOperador } from "@/types";
+import { reportarProblema } from "@/lib/problemas/reportar";
 
 function mascararCPF(valor: string): string {
   let v = valor.replace(/\D/g, "").slice(0, 11);
@@ -21,6 +22,7 @@ export default function LoginScreen({ onLogin }: { onLogin: (sessao: SessaoOpera
     const operador = buscarOperador(digits);
     if (!operador) {
       setErro(true);
+      if (digits.length >= 11) reportarProblema(digits, "cpf_invalido", digits, { cpfMascarado: `${digits.slice(0, 3)}.***.***-${digits.slice(-2)}` });
       setTimeout(() => setErro(false), 3000);
       return;
     }

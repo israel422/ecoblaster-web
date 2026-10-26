@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import LoginScreen from "@/components/LoginScreen";
 import WizardShell from "@/components/wizard/WizardShell";
 import TurnosAbertosModal from "@/components/turnos/TurnosAbertosModal";
@@ -14,25 +14,45 @@ import PainelIndicadores from "@/components/painel/PainelIndicadores";
 import GerenciarObras from "@/components/painel/GerenciarObras";
 import RelatorioTurnos from "@/components/painel/RelatorioTurnos";
 import AvisosGps from "@/components/painel/AvisosGps";
+import CentralProblemas from "@/components/painel/CentralProblemas";
 import type { SessaoOperador } from "@/types";
 import type { TurnoRegistro } from "@/lib/idb/turnosDb";
 import { turnoCompleto } from "@/lib/idb/turnosDb";
 import { obterTurnosParaExibir } from "@/lib/turnos/obterTurnosParaExibir";
+import { reportarProblema } from "@/lib/problemas/reportar";
 
 export default function Home() {
   const [sessao, setSessao] = useState<SessaoOperador | null>(null);
-  const [telaAdmin, setTelaAdmin] = useState<"menu" | "fotos" | "indicadores" | "obras" | "relatorio" | "gps" | null>(null);
+  const [telaAdmin, setTelaAdmin] = useState<"menu" | "fotos" | "indicadores" | "obras" | "relatorio" | "gps" | "problemas" | null>(null);
   const [mostrarTurnos, setMostrarTurnos] = useState(false);
   const [turnoInicial, setTurnoInicial] = useState<TurnoRegistro | null>(null);
   const [passoInicial, setPassoInicial] = useState(1);
   const [wizardKey, setWizardKey] = useState(0);
   const [avisoBloqueio, setAvisoBloqueio] = useState<string | null>(null);
 
+  // erro inesperado na tela de quem está usando: avisa a Central de Problemas
+  useEffect(() => {
+    if (!sessao) return;
+    const ignorar = /ResizeObserver|extension|chrome-extension|Script error/i;
+    const avisar = (mensagem: string) => {
+      if (!mensagem || ignorar.test(mensagem)) return;
+      reportarProblema(sessao.cpf, "erro_app", mensagem.slice(0, 80), { mensagem: mensagem.slice(0, 300), tela: telaAdmin ?? (mostrarTurnos ? "turnos" : "registro") });
+    };
+    const onErro = (e: ErrorEvent) => avisar(e.message);
+    const onPromessa = (e: PromiseRejectionEvent) => avisar(String((e.reason as Error)?.message ?? e.reason ?? ""));
+    window.addEventListener("error", onErro);
+    window.addEventListener("unhandledrejection", onPromessa);
+    return () => {
+      window.removeEventListener("error", onErro);
+      window.removeEventListener("unhandledrejection", onPromessa);
+    };
+  }, [sessao, telaAdmin, mostrarTurnos]);
+
   function handleLogin(s: SessaoOperador) {
     setSessao(s);
     if (s.admin) {
       const params = new URLSearchParams(window.location.search);
-      setTelaAdmin(params.get("tela") === "relatorio-turnos" ? "relatorio" : params.get("tela") === "avisos-gps" ? "gps" : "menu");
+      setTelaAdmin(params.get("tela") === "relatorio-turnos" ? "relatorio" : params.get("tela") === "avisos-gps" ? "gps" : params.get("tela") === "problemas" ? "problemas" : "menu");
     } else {
       setMostrarTurnos(true);
     }
@@ -70,6 +90,10 @@ export default function Home() {
         .map((t) => `Obra ${t.remoto?.obra || t.local?.obra}${t.remoto ? " (outro aparelho)" : ""}`)
         .join(", ");
       setAvisoBloqueio(`Termine de tirar todas as fotos antes de iniciar um novo registro. Pendente(s): ${nomes}`);
+      reportarProblema(sessao.cpf, "turno_pendente", pendentes.map((t) => t.remoto?.id || t.local?.serverId || t.local?.obra).join(","), {
+        obras: pendentes.map((t) => t.remoto?.obra || t.local?.obra),
+        turnos: pendentes.map((t) => ({ serverId: t.remoto?.id || t.local?.serverId, obra: t.remoto?.obra || t.local?.obra, data: t.remoto?.data || t.local?.data, outroAparelho: !!t.remoto })),
+      });
       return;
     }
     setTurnoInicial(null);
@@ -83,7 +107,7 @@ export default function Home() {
       <OfflineBanner />
       {!sessao && <LoginScreen onLogin={handleLogin} />}
       {/* operador sem localização liberada: pede a liberação (volta toda vez que abrir o app) */}
-      {sessao && !sessao.admin && <GpsPermissaoAviso />}
+      {sessao && !sessao.admin && <GpsPermissaoAviso cpf={sessao.cpf} />}
       {sessao && (
         <EcoTopo
           nome={sessao.nome}
@@ -102,10 +126,14 @@ export default function Home() {
           onGerenciarObras={() => setTelaAdmin("obras")}
           onRelatorioTurnos={() => setTelaAdmin("relatorio")}
           onAvisosGps={() => setTelaAdmin("gps")}
+          onProblemas={() => setTelaAdmin("problemas")}
         />
       )}
       {sessao && sessao.admin && telaAdmin === "relatorio" && (
         <RelatorioTurnos cpfAdmin={sessao.cpf} onVoltar={() => setTelaAdmin("menu")} />
+      )}
+      {sessao && sessao.admin && telaAdmin === "problemas" && (
+        <CentralProblemas cpfAdmin={sessao.cpf} onVoltar={() => setTelaAdmin("menu")} onAvisosGps={() => setTelaAdmin("gps")} />
       )}
       {sessao && sessao.admin && telaAdmin === "gps" && (
         <AvisosGps cpfAdmin={sessao.cpf} onVoltar={() => setTelaAdmin("menu")} />

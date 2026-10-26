@@ -2,6 +2,7 @@
 
 import { useCallback, useEffect, useState } from "react";
 import { iniciarGps, ouvirGps, reiniciarGps, statusGps } from "@/lib/camera/gps";
+import { reportarProblema } from "@/lib/problemas/reportar";
 
 type Permissao = "liberada" | "perguntar" | "bloqueada" | "desconhecida";
 
@@ -19,7 +20,7 @@ async function lerPermissao(): Promise<Permissao> {
 
 // Janela que pede ao operador para liberar a localização, sempre que ela não estiver liberada.
 // Volta a aparecer toda vez que o app é aberto ou volta para a tela, até liberar.
-export default function GpsPermissaoAviso() {
+export default function GpsPermissaoAviso({ cpf }: { cpf: string }) {
   const [permissao, setPermissao] = useState<Permissao>("desconhecida");
   const [adiado, setAdiado] = useState(false);
   const [verificando, setVerificando] = useState(false);
@@ -63,6 +64,11 @@ export default function GpsPermissaoAviso() {
       if (status) status.onchange = null;
     };
   }, [verificar]);
+
+  // localização bloqueada: avisa a Central de Problemas (uma vez a cada 10 min por aparelho)
+  useEffect(() => {
+    if (permissao === "bloqueada") reportarProblema(cpf, "gps_bloqueado", "gps", {});
+  }, [permissao, cpf]);
 
   // "Permitir": faz o navegador mostrar o pedido de permissão
   function pedirPermissao() {

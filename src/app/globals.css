@@ -909,3 +909,33 @@ table th { background: #e9f4ee; color: #0f3b3c; }
 .turno-notif { display: flex; flex-wrap: wrap; align-items: center; gap: 8px; background: #fff7e0; border: 1px solid #f3dca0; color: #6b4a00; border-radius: 12px; padding: 8px 12px; margin-bottom: 12px; font-size: 13px; }
 .turno-notif button { padding: 6px 12px; border-radius: 999px; border: 1.5px solid #3aa751; background: #fff; color: #1f7a4a; font-weight: 700; font-size: 13px; cursor: pointer; }
 .turno-notif small { flex-basis: 100%; color: #a32020; }
+
+/* ===== Central de Problemas ===== */
+.eco-problemas { position: relative; width: 100%; display: flex; align-items: center; gap: 16px; text-align: left; padding: 16px 20px; margin-bottom: 16px;
+  border-radius: 16px; border: 1px solid #e1e8e5; background: #fff; cursor: pointer; }
+.eco-problemas b { display: block; font-size: 17px; color: #0f3b3c; }
+.eco-problemas small { display: block; font-size: 13.5px; color: #5d6f6c; margin-top: 3px; }
+.eco-problemas.tem { border-color: #f3c1bc; background: #fff8f7; }
+.eco-problemas.tem .eco-ico { background: #fdecea; }
+.eco-problemas.tem .eco-ico svg { stroke: #c5221f; }
+.eco-badge { margin-left: auto; min-width: 28px; height: 28px; padding: 0 8px; border-radius: 999px; background: #c5221f; color: #fff; font: 800 14px/28px sans-serif; text-align: center; font-style: normal; }
+.central { max-width: 900px; margin: 0 auto; padding: 24px 16px 48px; }
+.central-topo { display: flex; justify-content: space-between; align-items: flex-start; gap: 12px; margin-bottom: 14px; }
+.central-topo h1 { margin: 0; color: #0f3b3c; font-size: 26px; }
+.central-topo p { margin: 4px 0 0; color: #5d6f6c; font-size: 13.5px; }
+.central-resumo { display: grid; grid-template-columns: repeat(4, 1fr); gap: 10px; margin-bottom: 16px; }
+.central-cont { background: #fff; border: 1px solid #e1e8e5; border-top: 4px solid #1f7a4a; border-radius: 12px; padding: 10px 12px; text-align: center; }
+.central-cont b { display: block; font-size: 24px; color: #0f3b3c; }
+.central-cont span { font-size: 12px; color: #5d6f6c; font-weight: 700; text-transform: uppercase; }
+.central-link { cursor: pointer; font: inherit; }
+.central-vazio { color: #5d6f6c; } .central-vazio.ok { color: #1f7a4a; font-weight: 700; }
+.central-item { background: #fff; border: 1px solid #e1e8e5; border-left: 5px solid #c5221f; border-radius: 14px; padding: 14px 16px; margin-bottom: 12px; }
+.central-cab { display: flex; flex-wrap: wrap; align-items: center; gap: 8px; font-size: 14px; }
+.central-selo { color: #fff; font-size: 11px; font-weight: 800; padding: 2px 8px; border-radius: 999px; text-transform: uppercase; }
+.central-quando { color: #5d6f6c; font-size: 12.5px; margin-left: auto; }
+.central-titulo { font-size: 16px; font-weight: 800; color: #173a3a; margin-top: 6px; }
+.central-detalhe { font-size: 13.5px; color: #4d625e; margin-top: 4px; }
+.central-solucao { margin-top: 8px; padding: 9px 12px; border-radius: 10px; background: #eef7f1; color: #154c33; font-size: 14px; line-height: 1.45; }
+.central-acoes { display: flex; flex-wrap: wrap; gap: 8px; margin-top: 10px; }
+.central-acoes button { padding: 8px 14px; font-size: 13.5px; }
+@media (max-width: 640px) { .central-resumo { grid-template-columns: repeat(2, 1fr); } .central-quando { margin-left: 0; width: 100%; } }
